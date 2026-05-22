@@ -1,0 +1,421 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME (original)
+═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --t-bg:           #030712;
+  --t-bg-card:      #111827;
+  --t-bg-raised:    #1f2937;
+  --t-border:       rgba(55, 65, 81, 1);
+  --t-text:         #f3f4f6;
+  --t-text-dim:     #9ca3af;
+  --t-text-faint:   #6b7280;
+  --t-text-xfaint:  #4b5563;
+  --t-accent:       #6366f1;
+  --t-active:       #fbbf24;
+  --t-party:        #2dd4bf;
+  --t-party-border: rgba(19, 78, 74, 1);
+  --t-loot:         #fde68a;
+
+  --btn-primary-bg:     #4f46e5;
+  --btn-primary-hover:  #4338ca;
+  --btn-primary-color:  #ffffff;
+  --btn-primary-border: #4f46e5;
+  --btn-secondary-bg:   #374151;
+  --btn-secondary-hover:#4b5563;
+  --btn-secondary-color:#f3f4f6;
+  --btn-secondary-border:#374151;
+  --btn-danger-bg:      #7f1d1d;
+  --btn-danger-hover:   #991b1b;
+  --btn-danger-color:   #fecaca;
+  --btn-danger-border:  #7f1d1d;
+  --btn-ghost-bg:       transparent;
+  --btn-ghost-hover:    #374151;
+  --btn-ghost-color:    #9ca3af;
+  --btn-ghost-color-hover:#f3f4f6;
+
+  --badge-blue-bg:   #1e3a5f; --badge-blue-color:   #93c5fd;
+  --badge-green-bg:  #14532d; --badge-green-color:  #86efac;
+  --badge-amber-bg:  #78350f; --badge-amber-color:  #fcd34d;
+  --badge-red-bg:    #7f1d1d; --badge-red-color:    #fca5a5;
+  --badge-purple-bg: #4c1d95; --badge-purple-color: #d8b4fe;
+  --badge-gray-bg:   #374151; --badge-gray-color:   #9ca3af;
+
+  --font-display: inherit;
+  --font-body:    inherit;
+  --radius: 0.375rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HALLOWDOWN THEME
+═══════════════════════════════════════════════════════════ */
+[data-theme="hallowdown"] {
+  --t-bg:           #09080a;
+  --t-bg-card:      #111018;
+  --t-bg-raised:    #1a1826;
+  --t-border:       rgba(160, 112, 48, 0.28);
+  --t-text:         #d8c88a;
+  --t-text-dim:     #8a7a50;
+  --t-text-faint:   #6a5a38;
+  --t-text-xfaint:  #4a3a28;
+  --t-accent:       #28e090;
+  --t-active:       #28e090;
+  --t-party:        #c8943a;
+  --t-party-border: rgba(160, 112, 48, 0.32);
+  --t-loot:         #c8943a;
+
+  --btn-primary-bg:      rgba(40, 224, 144, 0.08);
+  --btn-primary-hover:   rgba(40, 224, 144, 0.14);
+  --btn-primary-color:   #28e090;
+  --btn-primary-border:  rgba(40, 224, 144, 0.40);
+  --btn-secondary-bg:    transparent;
+  --btn-secondary-hover: #1a1826;
+  --btn-secondary-color: #c8943a;
+  --btn-secondary-border:rgba(160, 112, 48, 0.35);
+  --btn-danger-bg:       rgba(192, 48, 48, 0.08);
+  --btn-danger-hover:    rgba(192, 48, 48, 0.14);
+  --btn-danger-color:    #c03030;
+  --btn-danger-border:   rgba(192, 48, 48, 0.35);
+  --btn-ghost-bg:        transparent;
+  --btn-ghost-hover:     rgba(160, 112, 48, 0.08);
+  --btn-ghost-color:     #8a7a50;
+  --btn-ghost-color-hover:#d8c88a;
+
+  --badge-blue-bg:   rgba(68,136,204,0.10);  --badge-blue-color:   #7ab4e8;
+  --badge-green-bg:  rgba(40,224,144,0.08);  --badge-green-color:  #28e090;
+  --badge-amber-bg:  rgba(160,112,48,0.10);  --badge-amber-color:  #c8943a;
+  --badge-red-bg:    rgba(192,48,48,0.08);   --badge-red-color:    #c03030;
+  --badge-purple-bg: rgba(160,80,200,0.10);  --badge-purple-color: #c080e0;
+  --badge-gray-bg:   rgba(160,112,48,0.07);  --badge-gray-color:   #8a7a50;
+
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Crimson Pro', Georgia, serif;
+  --radius: 7px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LCARS THEME (SNW Enterprise-inspired)
+   Palette pulls from Strange New Worlds bridge HUDs:
+     • Deep navy-black backdrop (space with a blue undertone)
+     • Warm amber/peach primary (Starfleet command gold)
+     • Cool cyan accents (science / party)
+     • Crimson alert red
+     • LCARS cream text
+   Font: Antonio (free Google Fonts stand-in for Swiss 911 / Okuda).
+   If not imported the stack falls back to Bebas / Oswald / system sans.
+═══════════════════════════════════════════════════════════ */
+[data-theme="lcars"] {
+  --t-bg:           #000814;
+  --t-bg-card:      #0a1428;
+  --t-bg-raised:    #14223d;
+  --t-border:       rgba(255, 153, 102, 0.28);
+  --t-text:         #f5e6c8;
+  --t-text-dim:     #b8966a;
+  --t-text-faint:   #8a7654;
+  --t-text-xfaint:  #5c4e3a;
+  --t-accent:       #ff9966;
+  --t-active:       #ffb347;
+  --t-party:        #6dc4e0;
+  --t-party-border: rgba(109, 196, 224, 0.32);
+  --t-loot:         #ffcc66;
+
+  --btn-primary-bg:      #ff9966;
+  --btn-primary-hover:   #ffb37a;
+  --btn-primary-color:   #000814;
+  --btn-primary-border:  #ff9966;
+  --btn-secondary-bg:    rgba(109, 196, 224, 0.10);
+  --btn-secondary-hover: rgba(109, 196, 224, 0.18);
+  --btn-secondary-color: #6dc4e0;
+  --btn-secondary-border:rgba(109, 196, 224, 0.35);
+  --btn-danger-bg:       #cc3333;
+  --btn-danger-hover:    #e04747;
+  --btn-danger-color:    #f5e6c8;
+  --btn-danger-border:   #cc3333;
+  --btn-ghost-bg:        transparent;
+  --btn-ghost-hover:     rgba(255, 153, 102, 0.10);
+  --btn-ghost-color:     #b8966a;
+  --btn-ghost-color-hover:#f5e6c8;
+
+  --badge-blue-bg:   rgba(109,196,224,0.14); --badge-blue-color:   #6dc4e0;
+  --badge-green-bg:  rgba(102,204,153,0.14); --badge-green-color:  #66cc99;
+  --badge-amber-bg:  rgba(255,179,71,0.14);  --badge-amber-color:  #ffcc66;
+  --badge-red-bg:    rgba(204,51,51,0.18);   --badge-red-color:    #ff6b6b;
+  --badge-purple-bg: rgba(214,122,214,0.14); --badge-purple-color: #d67ad6;
+  --badge-gray-bg:   rgba(184,150,106,0.10); --badge-gray-color:   #b8966a;
+
+  --font-display: 'Antonio', 'Bebas Neue', 'Oswald', system-ui, sans-serif;
+  --font-body:    'Antonio', 'Oswald', system-ui, sans-serif;
+  --radius: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════════════════════ */
+* { scrollbar-width: thin; scrollbar-color: var(--t-border, #374151) transparent; }
+
+body {
+  background-color: var(--t-bg, #030712) !important;
+  color: var(--t-text, #f3f4f6) !important;
+  font-family: var(--font-body, inherit);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hallowdown atmospheric gradient */
+[data-theme="hallowdown"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%,  rgba(40,80,160,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(160,112,48,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+[data-theme="hallowdown"] #root { position: relative; z-index: 1; }
+
+[data-theme="hallowdown"] h1,
+[data-theme="hallowdown"] h2,
+[data-theme="hallowdown"] h3 {
+  font-family: var(--font-display);
+}
+
+/* LCARS atmospheric gradient — deep-space blue with amber corner highlight,
+   mimicking the glow from bridge panels caught on the viewscreen. */
+[data-theme="lcars"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 0%,  rgba(40, 100, 180, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 35% at 95% 5%,  rgba(255, 153, 102, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 5% 95%,  rgba(109, 196, 224, 0.06) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+[data-theme="lcars"] #root { position: relative; z-index: 1; }
+
+[data-theme="lcars"] h1,
+[data-theme="lcars"] h2,
+[data-theme="lcars"] h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAILWIND OVERRIDES — Hallowdown
+═══════════════════════════════════════════════════════════ */
+
+/* Backgrounds */
+[data-theme="hallowdown"] .bg-gray-950,
+[data-theme="hallowdown"] .bg-gray-900    { background-color: var(--t-bg) !important; }
+[data-theme="hallowdown"] .bg-gray-800    { background-color: var(--t-bg-card) !important; }
+[data-theme="hallowdown"] .bg-gray-700    { background-color: var(--t-bg-raised) !important; }
+[data-theme="hallowdown"] .bg-gray-800\/60 { background-color: rgba(17,16,24,0.60) !important; }
+[data-theme="hallowdown"] .bg-gray-800\/80 { background-color: rgba(17,16,24,0.80) !important; }
+[data-theme="hallowdown"] .bg-gray-800\/50 { background-color: rgba(17,16,24,0.50) !important; }
+[data-theme="hallowdown"] .hover\:bg-gray-800\/50:hover { background-color: rgba(17,16,24,0.50) !important; }
+[data-theme="hallowdown"] .hover\:bg-gray-700:hover  { background-color: var(--t-bg-raised) !important; }
+[data-theme="hallowdown"] .hover\:bg-gray-600:hover  { background-color: rgba(40,32,55,1) !important; }
+
+/* Text */
+[data-theme="hallowdown"] .text-gray-100,
+[data-theme="hallowdown"] .text-gray-200,
+[data-theme="hallowdown"] .text-gray-300  { color: var(--t-text) !important; }
+[data-theme="hallowdown"] .text-gray-400  { color: var(--t-text-dim) !important; }
+[data-theme="hallowdown"] .text-gray-500  { color: var(--t-text-faint) !important; }
+[data-theme="hallowdown"] .text-gray-600  { color: var(--t-text-xfaint) !important; }
+[data-theme="hallowdown"] .hover\:text-gray-200:hover,
+[data-theme="hallowdown"] .hover\:text-gray-300:hover { color: var(--t-text) !important; }
+[data-theme="hallowdown"] .hover\:text-gray-400:hover { color: var(--t-text-dim) !important; }
+
+/* Borders */
+[data-theme="hallowdown"] .border-gray-700,
+[data-theme="hallowdown"] .border-gray-800,
+[data-theme="hallowdown"] .border-gray-600  { border-color: var(--t-border) !important; }
+[data-theme="hallowdown"] .border-gray-700\/50 { border-color: rgba(160,112,48,0.14) !important; }
+
+/* Focus */
+[data-theme="hallowdown"] .focus\:border-indigo-500:focus { border-color: var(--t-accent) !important; }
+[data-theme="hallowdown"] .focus\:border-teal-500:focus   { border-color: var(--t-party) !important; }
+
+/* Indigo → glow green */
+[data-theme="hallowdown"] .bg-indigo-600     { background-color: rgba(40,224,144,0.10) !important; }
+[data-theme="hallowdown"] .bg-indigo-700     { background-color: rgba(40,224,144,0.14) !important; }
+[data-theme="hallowdown"] .hover\:bg-indigo-700:hover { background-color: rgba(40,224,144,0.14) !important; }
+[data-theme="hallowdown"] .bg-indigo-900\/40 { background-color: rgba(40,224,144,0.06) !important; }
+[data-theme="hallowdown"] .bg-indigo-900\/20 { background-color: rgba(40,224,144,0.04) !important; }
+[data-theme="hallowdown"] .text-indigo-400   { color: var(--t-accent) !important; }
+[data-theme="hallowdown"] .text-indigo-200,
+[data-theme="hallowdown"] .text-indigo-300   { color: var(--t-accent) !important; }
+[data-theme="hallowdown"] .border-indigo-500,
+[data-theme="hallowdown"] .border-indigo-600 { border-color: rgba(40,224,144,0.40) !important; }
+[data-theme="hallowdown"] .border-indigo-700 { border-color: rgba(40,224,144,0.28) !important; }
+[data-theme="hallowdown"] .hover\:text-indigo-300:hover,
+[data-theme="hallowdown"] .hover\:text-indigo-200:hover { color: var(--t-accent) !important; }
+
+/* Active lit indicator → glow green */
+[data-theme="hallowdown"] .text-amber-400 { color: var(--t-active) !important; }
+
+/* Loot / amber text */
+[data-theme="hallowdown"] .text-amber-200 { color: #c8943a !important; }
+[data-theme="hallowdown"] .text-amber-500 { color: #a07030 !important; }
+
+/* Loot box border */
+[data-theme="hallowdown"] .border-amber-900\/40 { border-color: rgba(160,112,48,0.28) !important; }
+[data-theme="hallowdown"] .bg-amber-900\/40     { background-color: rgba(192,88,24,0.08) !important; }
+[data-theme="hallowdown"] .border-amber-700\/60 { border-color: rgba(192,88,24,0.35) !important; }
+
+/* Party inventory → copper */
+[data-theme="hallowdown"] .text-teal-400  { color: var(--t-party) !important; }
+[data-theme="hallowdown"] .text-teal-100  { color: var(--t-text) !important; }
+[data-theme="hallowdown"] .text-teal-200  { color: var(--t-party) !important; }
+[data-theme="hallowdown"] .border-teal-900\/40,
+[data-theme="hallowdown"] .border-teal-900\/30,
+[data-theme="hallowdown"] .border-teal-900\/60  { border-color: rgba(160,112,48,0.28) !important; }
+[data-theme="hallowdown"] .bg-teal-950\/20      { background-color: rgba(160,112,48,0.04) !important; }
+[data-theme="hallowdown"] .bg-teal-900\/40      { background-color: rgba(160,112,48,0.08) !important; }
+[data-theme="hallowdown"] .bg-teal-900\/20      { background-color: rgba(160,112,48,0.04) !important; }
+[data-theme="hallowdown"] .border-teal-600      { border-color: var(--t-party) !important; }
+
+/* Red / danger */
+[data-theme="hallowdown"] .bg-red-900,
+[data-theme="hallowdown"] .bg-red-950\/30   { background-color: rgba(192,48,48,0.08) !important; }
+[data-theme="hallowdown"] .hover\:bg-red-800:hover { background-color: rgba(192,48,48,0.14) !important; }
+[data-theme="hallowdown"] .border-red-900\/60 { border-color: rgba(192,48,48,0.35) !important; }
+[data-theme="hallowdown"] .text-red-100     { color: #e06060 !important; }
+[data-theme="hallowdown"] .text-red-400     { color: #c03030 !important; }
+
+/* Purple (renewables) — keep but shift warm */
+[data-theme="hallowdown"] .text-purple-400 { color: #c080e0 !important; }
+[data-theme="hallowdown"] .text-purple-300 { color: #d8a0f0 !important; }
+[data-theme="hallowdown"] .border-purple-900 { border-color: rgba(160,80,200,0.28) !important; }
+[data-theme="hallowdown"] .focus\:border-purple-700:focus { border-color: rgba(160,80,200,0.55) !important; }
+
+/* Placeholder */
+[data-theme="hallowdown"] .placeholder-gray-600::placeholder { color: var(--t-text-faint) !important; opacity: 0.6; }
+
+/* Uppercase label text → Cinzel in Hallowdown */
+[data-theme="hallowdown"] .uppercase { font-family: var(--font-display); letter-spacing: 0.1em; }
+
+/* ═══════════════════════════════════════════════════════════
+   TAILWIND OVERRIDES — LCARS
+═══════════════════════════════════════════════════════════ */
+
+/* Backgrounds */
+[data-theme="lcars"] .bg-gray-950,
+[data-theme="lcars"] .bg-gray-900    { background-color: var(--t-bg) !important; }
+[data-theme="lcars"] .bg-gray-800    { background-color: var(--t-bg-card) !important; }
+[data-theme="lcars"] .bg-gray-700    { background-color: var(--t-bg-raised) !important; }
+[data-theme="lcars"] .bg-gray-800\/60 { background-color: rgba(10,20,40,0.60) !important; }
+[data-theme="lcars"] .bg-gray-800\/80 { background-color: rgba(10,20,40,0.80) !important; }
+[data-theme="lcars"] .bg-gray-800\/50 { background-color: rgba(10,20,40,0.50) !important; }
+[data-theme="lcars"] .hover\:bg-gray-800\/50:hover { background-color: rgba(10,20,40,0.50) !important; }
+[data-theme="lcars"] .hover\:bg-gray-700:hover     { background-color: var(--t-bg-raised) !important; }
+[data-theme="lcars"] .hover\:bg-gray-600:hover     { background-color: rgba(30,50,90,1) !important; }
+[data-theme="lcars"] .bg-gray-950\/40 { background-color: rgba(0,8,20,0.40) !important; }
+
+/* Text */
+[data-theme="lcars"] .text-gray-100,
+[data-theme="lcars"] .text-gray-200,
+[data-theme="lcars"] .text-gray-300  { color: var(--t-text) !important; }
+[data-theme="lcars"] .text-gray-400  { color: var(--t-text-dim) !important; }
+[data-theme="lcars"] .text-gray-500  { color: var(--t-text-faint) !important; }
+[data-theme="lcars"] .text-gray-600  { color: var(--t-text-xfaint) !important; }
+[data-theme="lcars"] .hover\:text-gray-200:hover,
+[data-theme="lcars"] .hover\:text-gray-300:hover { color: var(--t-text) !important; }
+[data-theme="lcars"] .hover\:text-gray-400:hover { color: var(--t-text-dim) !important; }
+
+/* Borders */
+[data-theme="lcars"] .border-gray-700,
+[data-theme="lcars"] .border-gray-800,
+[data-theme="lcars"] .border-gray-600  { border-color: var(--t-border) !important; }
+[data-theme="lcars"] .border-gray-700\/50 { border-color: rgba(255,153,102,0.14) !important; }
+
+/* Focus */
+[data-theme="lcars"] .focus\:border-indigo-500:focus { border-color: var(--t-accent) !important; }
+[data-theme="lcars"] .focus\:border-teal-500:focus   { border-color: var(--t-party) !important; }
+
+/* Indigo → LCARS peach/orange */
+[data-theme="lcars"] .bg-indigo-600     { background-color: var(--t-accent) !important; color: #000814 !important; }
+[data-theme="lcars"] .bg-indigo-700     { background-color: #ff7733 !important; color: #000814 !important; }
+[data-theme="lcars"] .hover\:bg-indigo-700:hover { background-color: #ff7733 !important; }
+[data-theme="lcars"] .bg-indigo-900\/50,
+[data-theme="lcars"] .bg-indigo-900\/40 { background-color: rgba(255,153,102,0.14) !important; }
+[data-theme="lcars"] .bg-indigo-900\/30 { background-color: rgba(255,153,102,0.10) !important; }
+[data-theme="lcars"] .bg-indigo-900\/20 { background-color: rgba(255,153,102,0.06) !important; }
+[data-theme="lcars"] .bg-indigo-950\/30 { background-color: rgba(255,153,102,0.08) !important; }
+[data-theme="lcars"] .text-indigo-400   { color: var(--t-accent) !important; }
+[data-theme="lcars"] .text-indigo-200,
+[data-theme="lcars"] .text-indigo-300   { color: var(--t-accent) !important; }
+[data-theme="lcars"] .border-indigo-500,
+[data-theme="lcars"] .border-indigo-600 { border-color: var(--t-accent) !important; }
+[data-theme="lcars"] .border-indigo-700,
+[data-theme="lcars"] .border-indigo-700\/40,
+[data-theme="lcars"] .border-indigo-700\/60 { border-color: rgba(255,153,102,0.40) !important; }
+[data-theme="lcars"] .hover\:text-indigo-300:hover,
+[data-theme="lcars"] .hover\:text-indigo-200:hover { color: var(--t-accent) !important; }
+
+/* Active / lit indicator → LCARS amber */
+[data-theme="lcars"] .text-amber-400 { color: var(--t-active) !important; }
+
+/* Loot / amber text */
+[data-theme="lcars"] .text-amber-200 { color: var(--t-loot) !important; }
+[data-theme="lcars"] .text-amber-500 { color: #cc9944 !important; }
+[data-theme="lcars"] .text-amber-300 { color: var(--t-loot) !important; }
+
+/* Loot box border + tint */
+[data-theme="lcars"] .border-amber-900\/40 { border-color: rgba(255,204,102,0.30) !important; }
+[data-theme="lcars"] .bg-amber-900\/40     { background-color: rgba(255,204,102,0.10) !important; }
+[data-theme="lcars"] .bg-amber-700         { background-color: #cc9944 !important; color: #000814 !important; }
+[data-theme="lcars"] .hover\:bg-amber-600:hover { background-color: #ddaa55 !important; }
+[data-theme="lcars"] .border-amber-700\/60 { border-color: rgba(255,153,102,0.45) !important; }
+
+/* Party inventory → cyan */
+[data-theme="lcars"] .text-teal-400  { color: var(--t-party) !important; }
+[data-theme="lcars"] .text-teal-100  { color: var(--t-text) !important; }
+[data-theme="lcars"] .text-teal-200  { color: var(--t-party) !important; }
+[data-theme="lcars"] .border-teal-900\/40,
+[data-theme="lcars"] .border-teal-900\/30,
+[data-theme="lcars"] .border-teal-900\/60  { border-color: var(--t-party-border) !important; }
+[data-theme="lcars"] .bg-teal-950\/20      { background-color: rgba(109,196,224,0.05) !important; }
+[data-theme="lcars"] .bg-teal-900\/40      { background-color: rgba(109,196,224,0.12) !important; }
+[data-theme="lcars"] .bg-teal-900\/20      { background-color: rgba(109,196,224,0.06) !important; }
+[data-theme="lcars"] .border-teal-600      { border-color: var(--t-party) !important; }
+
+/* Red / alert */
+[data-theme="lcars"] .bg-red-900,
+[data-theme="lcars"] .bg-red-950\/30    { background-color: rgba(204,51,51,0.14) !important; }
+[data-theme="lcars"] .hover\:bg-red-800:hover { background-color: rgba(224,71,71,0.22) !important; }
+[data-theme="lcars"] .border-red-900\/60,
+[data-theme="lcars"] .border-red-900\/50 { border-color: rgba(204,51,51,0.50) !important; }
+[data-theme="lcars"] .text-red-100     { color: #ff9999 !important; }
+[data-theme="lcars"] .text-red-400     { color: #ff6b6b !important; }
+
+/* Purple (renewables) → LCARS magenta/rose */
+[data-theme="lcars"] .text-purple-400 { color: #d67ad6 !important; }
+[data-theme="lcars"] .text-purple-300 { color: #e6a0e6 !important; }
+[data-theme="lcars"] .text-purple-600 { color: #b060b0 !important; }
+[data-theme="lcars"] .bg-purple-600   { background-color: #d67ad6 !important; color: #000814 !important; }
+[data-theme="lcars"] .bg-purple-700   { background-color: #c060c0 !important; color: #000814 !important; }
+[data-theme="lcars"] .border-purple-900 { border-color: rgba(214,122,214,0.30) !important; }
+[data-theme="lcars"] .focus\:border-purple-700:focus { border-color: rgba(214,122,214,0.55) !important; }
+
+/* Placeholder */
+[data-theme="lcars"] .placeholder-gray-600::placeholder { color: var(--t-text-faint) !important; opacity: 0.6; }
+
+/* Uppercase label text → Antonio/condensed sans in LCARS with wider spacing */
+[data-theme="lcars"] .uppercase { font-family: var(--font-display); letter-spacing: 0.12em; }
+
+/* LCARS signature: amber accent bar on the left edge of card-like panels.
+   Targets the common pattern of rounded-xl containers with a border. */
+[data-theme="lcars"] .rounded-xl {
+  box-shadow: inset 4px 0 0 0 rgba(255, 153, 102, 0.55);
+}
+/* Exception: modal dialogs shouldn't get the accent bar — they're centered,
+   not panels. Detect via the fixed-positioned modal wrapper's child. */
+[data-theme="lcars"] .fixed .rounded-xl {
+  box-shadow: none;
+}

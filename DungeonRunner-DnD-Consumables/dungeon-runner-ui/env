@@ -1,0 +1,5 @@
+# Development — Vite dev server talks to local C# backend
+VITE_HUB_URL=http://localhost:62129/gamehub
+
+# When hosting on your Surface for players, change to your local network IP:
+# VITE_HUB_URL=http://0.0.0.0:62129/gamehub
