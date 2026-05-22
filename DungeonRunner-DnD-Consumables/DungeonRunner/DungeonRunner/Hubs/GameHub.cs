@@ -1,0 +1,647 @@
+using DungeonRunner.Domain;
+using DungeonRunner.DTOs;
+using DungeonRunner.Infrastructure;
+using DungeonRunner.Services;
+using Microsoft.AspNetCore.SignalR;
+
+namespace DungeonRunner.Hubs;
+
+public class GameHub : Hub
+{
+    private readonly StateService _state;
+    private readonly GameService _game;
+    private readonly TurnEngine _turnEngine;
+
+    // Soft cap on decoded icon bytes — PNG is already compressed, 256 KB is
+    // generous for a tiny inventory icon.
+    private const int MaxIconBytes = 256 * 1024;
+
+    public GameHub(StateService state, GameService game, TurnEngine turnEngine)
+    {
+        _state = state; _game = game; _turnEngine = turnEngine;
+    }
+
+    // ---------------------------------------------------------
+    // BROADCASTS
+    //
+    // Mapper calls receive the current active scenario (for non-DM filtering)
+    // and the icon-resolver delegate so item DTOs get their iconUrl stamped.
+    // ---------------------------------------------------------
+    private string? ActiveScenario => _state.TurnState.ActiveScenario;
+    private Func<string, string?> ResolveIcon => _state.IconUrlFor;
+
+    private Task BroadcastCharacterUpdate(string userId)
+    {
+        if (!_state.Users.TryGetValue(userId, out var c)) return Task.CompletedTask;
+        var playerDto = DtoMapper.ToCharacterDto(c, isDm: false, ActiveScenario, ResolveIcon);
+        var dmDto     = DtoMapper.ToCharacterDto(c, isDm: true,  ActiveScenario, ResolveIcon);
+        return Task.WhenAll(
+            Clients.Group($"user-{userId}").SendAsync("ReceivePersonalUpdate", playerDto),
+            Clients.Group("dm").SendAsync("ReceivePersonalUpdate", dmDto),
+            Clients.Group("party").SendAsync("ReceiveRosterUpdate", playerDto)
+        );
+    }
+
+    private Task BroadcastPartyUpdate()
+    {
+        var p = DtoMapper.ToPartyDto(_state.Party, isDm: false, ActiveScenario, ResolveIcon);
+        var d = DtoMapper.ToPartyDto(_state.Party, isDm: true,  ActiveScenario, ResolveIcon);
+        return Task.WhenAll(
+            Clients.Group("party").SendAsync("ReceivePartyUpdate", p),
+            Clients.Group("dm").SendAsync("ReceivePartyUpdate", d)
+        );
+    }
+
+    private Task BroadcastEncounterUpdate() =>
+        Clients.Group("dm").SendAsync("ReceiveEncounterUpdate",
+            _state.Encounters.Select(e => DtoMapper.ToEncounterDto(e, ResolveIcon)).ToList());
+
+    private Task BroadcastTurnUpdate() =>
+        Clients.Group("party").SendAsync("ReceiveTurnUpdate", DtoMapper.ToTurnStateDto(_state.TurnState));
+
+    private Task BroadcastCatalogUpdate() =>
+        Clients.Group("dm").SendAsync("ReceiveCatalogUpdate", _state.ItemCatalog);
+
+    private Task BroadcastScenarioListUpdate() =>
+        Clients.Group("dm").SendAsync("ReceiveScenarioListUpdate",
+            _state.Scenarios.Select(DtoMapper.ToScenarioDto).ToList());
+
+    // Re-broadcasts everything whose filtered view depends on ActiveScenario.
+    // Called when a scenario starts or ends — the turn update itself carries
+    // the new ActiveScenario, but character/party payloads need re-emission
+    // because their item lists are filtered server-side.
+    private async Task BroadcastScenarioRefresh()
+    {
+        await BroadcastTurnUpdate();
+        await BroadcastPartyUpdate();
+        await BroadcastEncounterUpdate();
+        foreach (var u in _state.Users.Keys) await BroadcastCharacterUpdate(u);
+    }
+
+    private Task SendActionLog(string userId, string action)
+    {
+        var name = _state.Users.TryGetValue(userId, out var c) ? c.Name : userId;
+        var entry = _state.Log(userId, name, action);
+        return Clients.Group("dm").SendAsync("ReceiveActionLog", DtoMapper.ToActionLogEntryDto(entry));
+    }
+
+    private static string NormalizeId(string id) => id.Trim().ToLowerInvariant();
+    private static string Plural(int n) => n == 1 ? "" : "s";
+
+    // ---------------------------------------------------------
+    // JOIN
+    // ---------------------------------------------------------
+    public async Task JoinSession(JoinSessionRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, "party");
+
+        if (req.IsDm)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "dm");
+            await Clients.Caller.SendAsync("ReceiveCatalogUpdate", _state.ItemCatalog);
+            await Clients.Caller.SendAsync("ReceiveScenarioListUpdate",
+                _state.Scenarios.Select(DtoMapper.ToScenarioDto).ToList());
+            await Clients.Caller.SendAsync("ReceiveEncounterUpdate",
+                _state.Encounters.Select(e => DtoMapper.ToEncounterDto(e, ResolveIcon)).ToList());
+            foreach (var kvp in _state.Users)
+                await Clients.Caller.SendAsync("ReceivePersonalUpdate",
+                    DtoMapper.ToCharacterDto(kvp.Value, isDm: true, ActiveScenario, ResolveIcon));
+            foreach (var entry in _state.ActionLog)
+                await Clients.Caller.SendAsync("ReceiveActionLog", DtoMapper.ToActionLogEntryDto(entry));
+        }
+        else
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
+            // Unified with DMCreatePlayer — one code path creates characters.
+            if (_game.CreatePlayer(userId, req.CharacterName)) await _state.SaveAll();
+            await Clients.Caller.SendAsync("ReceivePersonalUpdate",
+                DtoMapper.ToCharacterDto(_state.Users[userId], isDm: false, ActiveScenario, ResolveIcon));
+            foreach (var kvp in _state.Users)
+                await Clients.Caller.SendAsync("ReceiveRosterUpdate",
+                    DtoMapper.ToCharacterDto(kvp.Value, isDm: false, ActiveScenario, ResolveIcon));
+        }
+
+        await Clients.Caller.SendAsync("ReceivePartyUpdate",
+            DtoMapper.ToPartyDto(_state.Party, isDm: req.IsDm, ActiveScenario, ResolveIcon));
+        await Clients.Caller.SendAsync("ReceiveTurnUpdate", DtoMapper.ToTurnStateDto(_state.TurnState));
+        Console.WriteLine($"[JoinSession] userId={userId} isDm={req.IsDm}");
+    }
+
+    // ---------------------------------------------------------
+    // PLAYER ACTIONS
+    //
+    // Each method now calls the service once and receives an ItemActionResult
+    // carrying the label (and verb, where the action uses one) so we never
+    // have to re-resolve the item on the hub side just for logging.
+    // ---------------------------------------------------------
+    public async Task UseItem(ItemActionRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.UseItem(userId, req.ItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"{r.Verb}s {req.Quantity}x {r.Label}");
+    }
+
+    public async Task RecoverItem(RecoverItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.RecoverItem(userId, req.ItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"attempts to recover {r.Label}");
+    }
+
+    public async Task LightItem(LightItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.LightItem(userId, req.ItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"{r.Verb}s {r.Label}");
+    }
+
+    public async Task SnuffItem(LightItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.SnuffItem(userId, req.ItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"{r.Verb} {r.Label}");
+    }
+
+    public async Task SpendRenewable(SpendRenewableRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.SpendRenewable(userId, req.ItemId, req.Amount);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"spends {req.Amount} charge{Plural(req.Amount)} of {r.Label}");
+    }
+
+    public async Task ShortRest(RestRequest req)
+    {
+        var u = NormalizeId(req.UserId);
+        if (!_game.ShortRest(u)) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(u);
+        await SendActionLog(u, "takes a short rest");
+    }
+
+    public async Task LongRest(RestRequest req)
+    {
+        var u = NormalizeId(req.UserId);
+        if (!_game.LongRest(u)) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(u);
+        await SendActionLog(u, "takes a long rest");
+    }
+
+    public async Task PinItem(PinItemRequest req)
+    {
+        var u = NormalizeId(req.UserId);
+        if (!_game.PinItem(u, req.ItemId, req.Pinned)) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(u);
+    }
+
+    public async Task GiveItemToParty(GiveItemToPartyRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.GiveItemToParty(userId, req.ItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId); await BroadcastPartyUpdate();
+        await SendActionLog(userId, $"gives {req.Quantity}x {r.Label} to party");
+    }
+
+    public async Task GiveItemToPlayer(GiveItemToPlayerRequest req)
+    {
+        var from = NormalizeId(req.FromUserId);
+        var to   = NormalizeId(req.ToUserId);
+        var r = _game.GiveItemToPlayer(from, to, req.ItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(from); await BroadcastCharacterUpdate(to);
+        await SendActionLog(from, $"gives {req.Quantity}x {r.Label} to {r.Secondary}");
+    }
+
+    public async Task FuelItem(FuelItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.FuelItem(userId, req.ItemId, req.FuelItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"adds {req.Quantity}x {r.Secondary} to {r.Label}");
+    }
+
+    // ---------------------------------------------------------
+    // PARTY
+    // ---------------------------------------------------------
+    public async Task ClaimLootToPlayer(ClaimLootToPlayerRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.ClaimLootToPlayer(userId, req.LootItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"claims {req.Quantity}x {r.Label} from loot");
+    }
+
+    public async Task ClaimLootToParty(ClaimLootToPartyRequest req)
+    {
+        var r = _game.ClaimLootToParty(req.LootItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+        await SendActionLog("party", $"{r.Label} moved to party inventory");
+    }
+
+    public async Task ClaimFromPartyToPlayer(ClaimFromPartyToPlayerRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.ClaimFromPartyToPlayer(userId, req.ItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog(userId, $"claims {req.Quantity}x {r.Label} from party");
+    }
+
+    public async Task UsePartyItem(UsePartyItemRequest req)
+    {
+        var r = _game.UsePartyItem(req.ItemId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+        await SendActionLog(NormalizeId(req.UserId), $"uses {req.Quantity}x {r.Label}");
+    }
+
+    // ---------------------------------------------------------
+    // DM — PLAYER MANAGEMENT
+    // ---------------------------------------------------------
+    public async Task DMCreatePlayer(DMCreatePlayerRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        if (!_game.CreatePlayer(userId, req.CharacterName)) return;
+        await _state.SaveAll();
+        await Clients.Group("dm").SendAsync("ReceivePersonalUpdate",
+            DtoMapper.ToCharacterDto(_state.Users[userId], isDm: true, ActiveScenario, ResolveIcon));
+        await SendActionLog("dm", $"[DM] creates {_state.Users[userId].Name} ({userId})");
+    }
+
+    // ---------------------------------------------------------
+    // DM — LOOT BOX
+    // ---------------------------------------------------------
+    public async Task DMAddLoot(DMAddLootRequest req)
+    {
+        _game.AddToLootBox(req.Name, req.Quantity);
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMAddLootFromCatalog(DMAddLootFromCatalogRequest req)
+    {
+        _game.AddToLootBoxFromCatalog(req.TemplateId, req.Quantity);
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMClearLootBox()
+    {
+        _game.ClearLootBox();
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+        await SendActionLog("dm", "[DM] clears the loot box");
+    }
+
+    public async Task DMEditLootItem(DMEditLootItemRequest req)
+    {
+        if (!_game.EditLootItem(req.LootItemId, req.Quantity, req.PlayerDescription, req.DmDescription)) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMDeleteLootItem(DMDeleteLootItemRequest req)
+    {
+        var r = _game.DeleteLootItem(req.LootItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+        await SendActionLog("dm", $"[DM] removes {r.Label} from loot box");
+    }
+
+    // ---------------------------------------------------------
+    // DM — PARTY INVENTORY
+    // ---------------------------------------------------------
+    public async Task DMAddPartyItem(DMAddPartyItemRequest req)
+    {
+        _game.AddToPartyInventory(req.Name, req.Quantity);
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMAddPartyItemFromCatalog(DMAddPartyItemFromCatalogRequest req)
+    {
+        _game.AddToPartyInventoryFromCatalog(req.TemplateId, req.Quantity);
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMEditPartyItem(DMEditPartyItemRequest req)
+    {
+        if (!_game.EditPartyItem(req.ItemId, req.Quantity, req.PlayerDescription, req.DmDescription)) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+    }
+
+    public async Task DMDeletePartyItem(DMDeletePartyItemRequest req)
+    {
+        var r = _game.DeletePartyItem(req.ItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate();
+        await SendActionLog("dm", $"[DM] removes {r.Label} from party inventory");
+    }
+
+    // ---------------------------------------------------------
+    // DM — ENCOUNTERS
+    // ---------------------------------------------------------
+    public async Task DMCreateEncounter(DMCreateEncounterRequest req)
+    {
+        _game.CreateEncounter(req.Name, req.Scenario);
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    public async Task DMAddItemToEncounter(DMAddItemToEncounterRequest req)
+    {
+        _game.AddItemToEncounter(req.EncounterId, req.Name, req.Quantity);
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    public async Task DMAddCatalogItemToEncounter(DMAddCatalogItemToEncounterRequest req)
+    {
+        _game.AddCatalogItemToEncounter(req.EncounterId, req.TemplateId, req.Quantity);
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    public async Task DMEditEncounterItem(DMEditEncounterItemRequest req)
+    {
+        if (!_game.EditEncounterItem(req.EncounterId, req.LootItemId, req.Quantity, req.PlayerDescription, req.DmDescription)) return;
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    public async Task DMRemoveItemFromEncounter(DMRemoveItemFromEncounterRequest req)
+    {
+        _game.RemoveItemFromEncounter(req.EncounterId, req.LootItemId);
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    public async Task DMPushEncounterToLootBox(DMPushEncounterRequest req)
+    {
+        var r = _game.PushEncounterToLootBox(req.EncounterId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate(); await BroadcastEncounterUpdate();
+        await SendActionLog("dm", $"[DM] moves all loot from '{r.Label}' to loot box");
+    }
+
+    public async Task DMPushSingleEncounterItem(DMPushSingleEncounterItemRequest req)
+    {
+        var r = _game.PushSingleEncounterItemToLootBox(req.EncounterId, req.LootItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastPartyUpdate(); await BroadcastEncounterUpdate();
+        await SendActionLog("dm", $"[DM] moves {r.Label} to loot box");
+    }
+
+    public async Task DMDeleteEncounter(DMDeleteEncounterRequest req)
+    {
+        if (!_game.DeleteEncounter(req.EncounterId)) return;
+        await _state.SaveAll(); await BroadcastEncounterUpdate();
+    }
+
+    // ---------------------------------------------------------
+    // DM — PLAYER ITEM CONTROLS
+    // ---------------------------------------------------------
+    public async Task DMDeleteItem(DMDeleteItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.DMDeleteItem(userId, req.ItemId);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog("dm", $"[DM] removes {r.Label} from {r.Secondary}");
+    }
+
+    public async Task DMAdjustItem(DMAdjustItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.DMAdjustItem(userId, req.ItemId,
+            req.Quantity, req.Charges, req.RemainingMinutes, req.MaxQuantity,
+            req.PlayerDescription, req.DmDescription,
+            req.DmDescriptionRevealed, req.IsPinned,
+            req.Scenario, req.UpdateScenario);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog("dm", $"[DM] adjusts {r.Label} on {r.Secondary}");
+    }
+
+    public async Task DMGiveItem(DMGiveItemRequest req)
+    {
+        var userId = NormalizeId(req.UserId);
+        var r = _game.DMGiveItem(userId, req.TemplateId, req.Quantity);
+        if (!r.Ok) return;
+        await _state.SaveAll(); await BroadcastCharacterUpdate(userId);
+        await SendActionLog("dm", $"[DM] gives {req.Quantity}x {r.Label} to {r.Secondary}");
+    }
+
+    // ---------------------------------------------------------
+    // DM — REST
+    // ---------------------------------------------------------
+    public async Task DMRest(RestRequest req)
+    {
+        var u = NormalizeId(req.UserId);
+        _game.ApplyRest(u, req.Type);
+        await _state.SaveAll(); await BroadcastCharacterUpdate(u);
+        await SendActionLog("dm", $"[DM] {req.Type} rest → {req.UserId}");
+    }
+
+    public async Task DMPartyShortRest()
+    {
+        var affected = _game.PartyShortRest(); await _state.SaveAll();
+        foreach (var u in affected) await BroadcastCharacterUpdate(u);
+        await Clients.Group("dm").SendAsync("ReceiveNotification", "Short rest applied to whole party.");
+        await SendActionLog("dm", "[DM] applies short rest to whole party");
+    }
+
+    public async Task DMPartyLongRest()
+    {
+        var affected = _game.PartyLongRest(); await _state.SaveAll();
+        foreach (var u in affected) await BroadcastCharacterUpdate(u);
+        await Clients.Group("dm").SendAsync("ReceiveNotification", "Long rest applied to whole party.");
+        await SendActionLog("dm", "[DM] applies long rest to whole party");
+    }
+
+    // ---------------------------------------------------------
+    // DM — CATALOG
+    //
+    // Hub now consumes ItemTemplateDto directly — the old CatalogItemRequest
+    // wrapper and ToTemplate hand-mapper are gone. Enum parsing lives in
+    // DtoMapper.FromItemTemplateDto and uses TryParse so a bad payload can't
+    // crash the method.
+    // ---------------------------------------------------------
+    public async Task DMCreateCatalogItem(ItemTemplateDto req)
+    {
+        _game.CreateCatalogItem(DtoMapper.FromItemTemplateDto(req));
+        await _state.SaveAll(); await BroadcastCatalogUpdate();
+    }
+
+    public async Task DMUpdateCatalogItem(ItemTemplateDto req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Id)) return;
+        _game.UpdateCatalogItem(DtoMapper.FromItemTemplateDto(req));
+        await _state.SaveAll(); await BroadcastCatalogUpdate();
+    }
+
+    public async Task DMDeleteCatalogItem(DeleteCatalogItemRequest req)
+    {
+        if (!_game.DeleteCatalogItem(req.TemplateId)) return;
+        await _state.SaveAll(); await BroadcastCatalogUpdate();
+        // Items in inventory keep their name match; icons resolved at map-time
+        // will simply return null after delete. Re-broadcast so clients drop
+        // any stale icon references.
+        await BroadcastPartyUpdate();
+        foreach (var u in _state.Users.Keys) await BroadcastCharacterUpdate(u);
+    }
+
+    // ---------------------------------------------------------
+    // DM — ICONS
+    //
+    // Client sends a base64-encoded PNG; we decode, cap size, write to disk,
+    // then re-broadcast the catalog (IconUrl changed) and touch every view
+    // that carries icons so clients refresh.
+    // ---------------------------------------------------------
+    public async Task DMUploadItemIcon(DMUploadItemIconRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.TemplateId) || string.IsNullOrWhiteSpace(req.Base64Png)) return;
+
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(req.Base64Png); }
+        catch { return; }
+
+        if (bytes.Length == 0 || bytes.Length > MaxIconBytes) return;
+        // PNG signature sanity check: 89 50 4E 47 0D 0A 1A 0A
+        if (bytes.Length < 8 ||
+            bytes[0] != 0x89 || bytes[1] != 0x50 || bytes[2] != 0x4E || bytes[3] != 0x47)
+            return;
+
+        if (!_game.SaveItemIcon(req.TemplateId, bytes)) return;
+        await _state.SaveAll();
+        await BroadcastCatalogUpdate();
+        await BroadcastPartyUpdate();
+        await BroadcastEncounterUpdate();
+        foreach (var u in _state.Users.Keys) await BroadcastCharacterUpdate(u);
+    }
+
+    public async Task DMRemoveItemIcon(DMRemoveItemIconRequest req)
+    {
+        if (!_game.RemoveItemIcon(req.TemplateId)) return;
+        await _state.SaveAll();
+        await BroadcastCatalogUpdate();
+        await BroadcastPartyUpdate();
+        await BroadcastEncounterUpdate();
+        foreach (var u in _state.Users.Keys) await BroadcastCharacterUpdate(u);
+    }
+
+    // ---------------------------------------------------------
+    // DM — SCENARIO CONTROL
+    //
+    // ActiveScenario rides on TurnStateDto so the existing ReceiveTurnUpdate
+    // event delivers the change — no new client event to wire up. Character
+    // and party views are re-broadcast because their filtered contents change
+    // when the scenario flips.
+    // ---------------------------------------------------------
+    public async Task DMStartScenario(DMStartScenarioRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.ScenarioId)) return;
+        if (!_game.StartScenario(req.ScenarioId)) return;
+        await _state.SaveAll();
+        await BroadcastScenarioRefresh();
+        var s = _state.Scenarios.FirstOrDefault(x => x.Id == req.ScenarioId);
+        var displayName = s?.Name ?? req.ScenarioId;
+        await SendActionLog("dm", $"[DM] begins scenario: {displayName}");
+    }
+
+    public async Task DMEndScenario()
+    {
+        var ended = _game.EndScenario();
+        if (ended == null) return;
+        await _state.SaveAll();
+        await BroadcastScenarioRefresh();
+        await SendActionLog("dm", $"[DM] ends scenario: {ended}");
+    }
+
+    // ---------------------------------------------------------
+    // SCENARIO CATALOG (CRUD)
+    // ---------------------------------------------------------
+    public async Task DMCreateScenario(DMCreateScenarioRequest req)
+    {
+        var created = _game.CreateScenario(req.Id, req.Name, req.Theme);
+        if (created == null)
+        {
+            await Clients.Caller.SendAsync("ReceiveNotification",
+                "Could not create scenario. Id may be blank, contain whitespace, or already exist.");
+            return;
+        }
+        await _state.SaveAll();
+        await BroadcastScenarioListUpdate();
+    }
+
+    public async Task DMUpdateScenario(DMUpdateScenarioRequest req)
+    {
+        if (!_game.UpdateScenario(req.Id, req.Name, req.Theme)) return;
+        await _state.SaveAll();
+        await BroadcastScenarioListUpdate();
+        // Theme may have changed while the scenario is active — re-broadcast
+        // turn state so every client picks up the new --data-theme value.
+        if (_state.TurnState.ActiveScenario == req.Id)
+            await BroadcastTurnUpdate();
+    }
+
+    public async Task DMDeleteScenario(DMDeleteScenarioRequest req)
+    {
+        if (!_game.DeleteScenario(req.Id, out var inUse))
+        {
+            var reason = _state.TurnState.ActiveScenario == req.Id
+                ? "Scenario is currently active. End it first."
+                : $"Scenario has {inUse} tagged item{Plural(inUse)}. Untag or delete those first.";
+            await Clients.Caller.SendAsync("ReceiveNotification", reason);
+            return;
+        }
+        await _state.SaveAll();
+        await BroadcastScenarioListUpdate();
+    }
+
+    // ---------------------------------------------------------
+    // DM — TURN
+    // ---------------------------------------------------------
+    public async Task DMAdvanceTurn()
+    {
+        var notifications = await _turnEngine.AdvanceTurn();
+        await BroadcastTurnUpdate(); await BroadcastPartyUpdate();
+        foreach (var u in _state.Users.Keys) await BroadcastCharacterUpdate(u);
+
+        foreach (var n in notifications)
+        {
+            if (n.UserId != "party")
+            {
+                // Individual player notification — send to player AND to DM
+                await Clients.Group($"user-{n.UserId}").SendAsync("ReceivePlayerNotification", n.PlayerMessage);
+                await Clients.Group("dm").SendAsync("ReceivePlayerNotification",
+                    $"[{n.CharacterName}] {n.PlayerMessage}");
+            }
+            else
+            {
+                // Party-wide — DM is already in the "party" group so this reaches them
+                await Clients.Group("party").SendAsync("ReceivePlayerNotification", n.PlayerMessage);
+            }
+            await SendActionLog(n.UserId, n.LogMessage);
+        }
+
+        await Clients.Group("dm").SendAsync("ReceiveNotification", $"Turn {_state.TurnState.CurrentTurn} begins.");
+    }
+
+    public async Task DMResetTurn()
+    {
+        _state.TurnState.CurrentTurn = 1;
+        await _state.SaveAll(); await BroadcastTurnUpdate();
+        await SendActionLog("dm", "[DM] resets turn to 1");
+    }
+
+    public async Task DMChangeTimeMode(ChangeTimeModeRequest req)
+    {
+        if (!Enum.TryParse<TimeMode>(req.TimeMode, ignoreCase: true, out var mode)) return;
+        _state.TurnState.TimeMode = mode;
+        await _state.SaveAll(); await BroadcastTurnUpdate();
+    }
+}
