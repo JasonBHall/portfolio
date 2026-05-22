@@ -1,10 +1,10 @@
 # Pursuits
 
-**A personal job-search CRM that lives on your machine.**
+**A job-search CRM that runs on your laptop.**
 
-No subscriptions, no accounts, no data sent anywhere. Just a clean local web app for tracking applications through the pipeline — with notes from your phone calls, files you've dragged in, and enough charts to know whether your search is actually moving.
+No accounts, no subscriptions, no vendor holding your history hostage. It's a local Flask app — start it, use it, own everything. Built out of frustration with spreadsheets and the recurring-fee crowd.
 
-Built with Python + Flask. Runs with a double-click on Windows and macOS.
+Runs on Windows and macOS. Double-click to launch.
 
 <br>
 
@@ -18,67 +18,67 @@ Built with Python + Flask. Runs with a double-click on Windows and macOS.
 
 Every spreadsheet I tried to use for job tracking turned into a mess by week two. Every commercial CRM wanted a monthly fee and put my data on their servers. I wanted something that felt like a real tool, worked offline, and let me actually own my history — including the notes from that recruiter call six weeks ago that I'd otherwise forget entirely.
 
-This is that tool.
+So I built it.
 
 <br>
 
 ## What it does
 
-### Track every opportunity through the pipeline
+### Pipeline tracking
 
-Seven stages: Lead → Applied → Screen → Interview → Onsite → Offer → Closed. Change status inline from the list — one click, no page reload. Archive anything you're done with; it stays in the record and can be restored.
+Seven stages: Lead → Applied → Screen → Interview → Onsite → Offer → Closed. Change status inline from the list — one click, no page reload. Archive anything you're done with; it stays in the record and restores with one click.
 
-### Know what needs attention without thinking about it
+### A morning view that tells you what needs attention
 
-The **Today view** opens every morning and surfaces four buckets: snoozes that have woken up, applications gone stale (2+ weeks without contact), interviews scheduled this week, and past interviews where you haven't sent a thank-you yet.
+Open **Today** first thing. It breaks your pipeline into four buckets: snoozes that expired overnight, applications with no contact in 2+ weeks, interviews scheduled this week, and past interviews where you haven't sent a thank-you yet.
 
 ![Today view — upcoming interviews, woke-up snoozes, stale follow-ups, outstanding thank-yous](screenshots/pursuits_today.jpg)
 
 *Today view: upcoming interviews with timestamps, woken snoozes, applications needing follow-up (2W STALE badges), and outstanding thank-you reminders.*
 
-### Age badges on every row
+### Staleness badges on every row
 
-Each opportunity shows a coloured staleness badge computed from your last logged contact — green for fresh, shading through amber and orange to red at 3+ months. You can't ignore what's gone cold when it's sitting there in orange.
+Each row shows a badge based on how long since you last logged contact — green for fresh, shading through amber, orange, and red-orange past the month mark. You notice the red ones. That's the point.
 
-### Log every call, email, and meeting
+### Notes timeline
 
-The notes timeline on each opportunity is reverse-chronological and timestamped. Type, pick call / email / meeting / note, submit. Adding a note resets the staleness clock — that's the whole mechanism.
+The timeline on each opportunity is reverse-chronological and timestamped. Pick call / email / meeting / note, write what happened, submit. Logging a note resets the staleness clock. That's the mechanism — no automation, no magic.
 
-### Drag and drop files
+### File attachments
 
-Drop a PDF job description, a screenshot, or an offer letter directly onto the opportunity. Images get thumbnails. Everything else gets a file icon. Delete removes it from disk.
+Drop a PDF offer letter, a job description screenshot, or any document directly onto the opportunity. Images get thumbnails. Delete removes the bytes from disk.
 
-### Filter and search that actually works
+### Search and filters that reach into notes
 
-The filter sidebar lets you narrow by status, age bucket, source, and your own tags — all combinable, all live-updating. Search reaches into note bodies and tags, not just the company name.
+The sidebar filters by status, staleness, source, and your own tags — all combinable, all live-updating as you tick boxes. The search bar reaches into note text, not just company name. If you wrote "great chat with Marcus" on a call three weeks ago, searching `marcus` finds it.
 
-### Schedule interviews and export to your calendar
+### Interview scheduling with calendar export
 
-Set an interview date/time on any opportunity. The detail page shows a banner with a one-click `.ics` download — double-click it to add the interview to your calendar app. No calendar API, no OAuth dance.
+Set a date and time on any opportunity. The detail page shows a banner with a one-click `.ics` download — open it in any calendar app to add the interview. No OAuth, no calendar API, no account needed.
 
 ![Detail page for Stratos Capital — compensation, hiring contact, snooze, tags, notes timeline](screenshots/pursuits_detail.jpg)
 
 *Detail page: salary range, hiring contact with email and LinkedIn, snooze widget, tags, file drop zone, and a full call/email/meeting timeline.*
 
-### Dashboard charts
+### Dashboard
 
-Four charts: pipeline funnel, applications per week by source (last 12 weeks), age distribution, and a status donut. The funnel is the one you'll check most — it tells you if you're getting stuck somewhere.
+Four charts: pipeline funnel, applications per week by source (last 12 weeks), age distribution, and a status donut. The funnel is the one worth checking regularly — it shows exactly where things are stacking up.
 
 ![Dashboard — headline tiles, pipeline funnel, status donut, activity by week, age distribution](screenshots/pursuits_dashboard.jpg)
 
 *Dashboard: headline tiles (Total, Active, In Flight, Offers), pipeline funnel, status donut, 12-week activity chart stacked by source, and age-distribution histogram.*
 
-### Snooze anything
+### Snooze
 
-Set a snooze date on any opportunity. It drops to the bottom of the active list and hides until that day — useful for "check back in two weeks" situations. Woken items show up in Today.
+Set a date, the opportunity hides until then. Useful when a recruiter says "reach back out in two weeks." Woken items show in Today.
 
 ### Tags
 
-Free-form tags on each opportunity. Tag something `dream` or `remote-only` or `backup` and filter by them later. Tags feed into the search too.
+Free-form tags on each record: `dream`, `remote-only`, `backup`, whatever. Tags filter in the sidebar and show up in search.
 
-### Nothing gets lost
+### Archive
 
-Close and archive any opportunity you're done with. Archived records stay searchable and can be restored to the active list at any time.
+Close an opportunity and archive it when you're done. Still searchable, still there, one click to restore.
 
 ![Archive view — closed and archived opportunities with Restore buttons](screenshots/pursuits_archive.jpg)
 
@@ -99,13 +99,13 @@ python app.py
 
 Your browser opens to `http://127.0.0.1:5000` automatically.
 
-Your data lives in `./data/`. It's gitignored. Back it up like any other important folder.
+Data lives in `./data/` — gitignored. Back it up like any other folder you care about.
 
 <br>
 
 ## Paste a job description, get a filled form
 
-If you have an Anthropic API key, the **Paste & extract** panel on the New Opportunity form will fill in company, role, salary range, location, and work mode from a pasted job description. One click.
+If you have an Anthropic API key, the **Paste & extract** panel on the New Opportunity form fills in company, role, salary range, location, and work mode from a pasted job posting. One click.
 
 To set it up: open **Settings** (bottom-left footer), paste your key, click Test, then Save. The key is stored in your data folder with restricted permissions and only ever sent to `api.anthropic.com`.
 
@@ -113,13 +113,13 @@ To set it up: open **Settings** (bottom-left footer), paste your key, click Test
 
 *New opportunity form: paste any job description into the Paste & Extract panel and click "Extract with Claude" to auto-fill the fields. No API key? The rest of the form works fine without it.*
 
-No key? Everything else still works. The extract panel just stays disabled.
+No key? Everything else works fine — the panel just stays disabled.
 
 <br>
 
-## Save job postings with a bookmarklet
+## Bookmarklet
 
-Visit **Bookmarklet** in the footer. Drag the link to your bookmarks bar. On any job posting page, optionally select the description text, then click the bookmark — a new tab opens with the URL and selected text prefilled. Hit Extract to fill the form from the description.
+Visit **Bookmarklet** in the footer and drag the link to your bookmarks bar. On any job posting page, select the description text and click it — a new tab opens with the URL and selected text prefilled. Hit Extract to fill the form.
 
 <br>
 
@@ -143,50 +143,45 @@ Shortcuts don't fire while you're typing in an input field.
 
 <br>
 
-## Double-click launcher (Windows and macOS)
+## Standalone launcher (Windows and macOS)
 
-The `packaging/` folder contains scripts to build a standalone `.exe` (Windows) or `.app` (macOS) — no Python installation required for the end user.
+The `packaging/` folder has scripts to build a `.exe` (Windows) or `.app` (macOS) — no Python required on the target machine.
 
 ```cmd
 cd packaging
 build_windows.bat
 ```
 
-Output is `packaging/Pursuits-Windows.zip`. Unzip, double-click `Pursuits.exe`. Data goes to `Documents\Pursuits\` so it's never inside the app bundle.
+Output is `packaging/Pursuits-Windows.zip`. Unzip, double-click `Pursuits.exe`. Data goes to `Documents\Pursuits\` so it survives app updates.
 
-See [`packaging/INSTALL.md`](packaging/INSTALL.md) for full instructions including macOS and code signing notes.
-
-<br>
-
-## Tech
-
-- **Python / Flask** — server-side rendering, no build step
-- **HTMX** — live search, inline status changes, note timeline, drag-drop uploads — without a JS framework
-- **Tailwind CSS** — via CDN, warm-dark palette
-- **Chart.js** — dashboard charts, loaded only on the dashboard page
-- **Pillow** — image thumbnails on upload
-- **JSON on disk** — atomic writes with temp-file-rename, 20-snapshot auto-backup before every save. No database.
-- **PyInstaller** — standalone bundling for distribution
-
-Two runtime dependencies: `Flask` and `Pillow`. Everything else is stdlib.
+See [`packaging/INSTALL.md`](packaging/INSTALL.md) for macOS and code signing notes.
 
 <br>
 
-## Data and privacy
+## How it's built
 
-Everything runs locally. The only outbound requests this app makes are:
+Two runtime dependencies: `Flask` and `Pillow`. Everything else is stdlib. Here's what each piece does and why it's there:
 
-- To `api.anthropic.com` when you use the Paste & extract feature (opt-in, requires your own API key)
-- The 1-token "Test" call on the Settings page when you click Test
+- **Python + Flask** — server-side rendering with Jinja templates. No build step, no bundler, no `node_modules`. `python app.py` and it runs.
+- **HTMX** — handles all the interactive bits (live search, inline status changes, note submissions, file uploads) through HTML attributes rather than a JavaScript framework. The whole frontend is about 50 lines of JS across the entire app.
+- **Tailwind CSS (CDN)** — warm dark palette, zero local toolchain. For a single-user app where first-load time is irrelevant, CDN Tailwind is the right call.
+- **Chart.js** — the four dashboard charts. Loaded only on the dashboard route, nowhere else.
+- **Pillow** — generates 240px thumbnails for image attachments on upload. That's its only job.
+- **JSON on disk** — all records live in `data/db.json`. Every write goes through a temp-file-rename (atomic on POSIX and Windows), and every save first snapshots the current file to `data/backups/` — last 20 kept automatically. No database to install, no migrations to run, no connection strings.
+- **PyInstaller** — bundles the whole thing into a self-contained binary for distribution. See `packaging/`.
 
-No telemetry. No analytics. No accounts. Your `data/` folder is yours.
+<br>
+
+## Privacy
+
+The app makes exactly two outbound requests, both requiring your explicit action: one to `api.anthropic.com` when you use Paste & extract, and one test call when you click "Test" on the Settings page. There's no telemetry, no background pings, no third-party services. Your `data/` folder never leaves your machine.
 
 <br>
 
 ## Developer notes
 
-See [`DEVELOPER_NOTES.md`](DEVELOPER_NOTES.md) for architecture decisions, the HTMX patterns used, the data model in detail, and notes on each build phase.
+See [`DEVELOPER_NOTES.md`](DEVELOPER_NOTES.md) for architecture decisions, the HTMX patterns used, the data model, and notes on each build phase.
 
 ---
 
-*Pursuits is a personal tool shared as-is. Issues and PRs welcome.*
+*Built for personal use and shared as-is. Issues and PRs welcome.*
