@@ -1,0 +1,113 @@
+{#
+  Filter sidebar.
+
+  Every checkbox is wired to GET / via HTMX. When any one toggles, the
+  whole form serializes (its name=value pairs) and posts to the index
+  route, which returns the rows fragment to swap into #opp-list-wrapper.
+
+  Why a <form> wrapping all the checkboxes:
+    HTMX serializes the closest enclosing form when you put hx-* on a
+    nested input. So the sidebar form here lets each checkbox include
+    EVERYTHING in the sidebar — status filters, age filters, source,
+    tags, the show-snoozed toggle — in a single request.
+
+  The hx-* attrs live on the form so all child inputs inherit them,
+  but each checkbox carries hx-trigger="change" individually because
+  forms don't auto-submit on change. (The <form> tag's default behavior
+  is "submit on Enter or button click" — change events need explicit
+  triggers.)
+
+  hx-include="[name='q']" pulls the search box into the request too,
+  so filter+search compose. The search input is in the page header,
+  not inside this form.
+#}
+<aside class="lg:sticky lg:top-24 self-start space-y-5">
+  <form id="filter-form"
+        hx-get="{{ url_for('index') }}"
+        hx-target="#opp-list-wrapper"
+        hx-push-url="true"
+        hx-include="[name='q']"
+        hx-trigger="change">
+
+    {# Status ============================================ #}
+    <div>
+      <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Status</h3>
+      <div class="space-y-1.5">
+        {% for s in STATUSES %}
+          <label class="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" name="status" value="{{ s }}"
+                   {% if s in filters.status %}checked{% endif %}
+                   class="rounded border-border bg-card text-accent focus:ring-accent focus:ring-offset-bg">
+            <span class="text-ink-2">{{ s }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Age ============================================== #}
+    <div>
+      <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Age</h3>
+      <div class="space-y-1.5">
+        {% for k in AGE_BUCKET_KEYS %}
+          <label class="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" name="age" value="{{ k }}"
+                   {% if k in filters.age %}checked{% endif %}
+                   class="rounded border-border bg-card text-accent focus:ring-accent focus:ring-offset-bg">
+            <span class="text-ink-2">{{ AGE_BUCKET_LABELS[k] }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Source ============================================ #}
+    <div>
+      <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Source</h3>
+      <div class="space-y-1.5">
+        {% for s in SOURCES %}
+          <label class="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" name="source" value="{{ s }}"
+                   {% if s in filters.source %}checked{% endif %}
+                   class="rounded border-border bg-card text-accent focus:ring-accent focus:ring-offset-bg">
+            <span class="text-ink-2">{{ s }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Tags ============================================== #}
+    {% if all_tags %}
+    <div>
+      <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Tags</h3>
+      <div class="space-y-1.5">
+        {% for t in all_tags %}
+          <label class="flex items-center gap-2 cursor-pointer text-sm">
+            <input type="checkbox" name="tag" value="{{ t }}"
+                   {% if t in filters.tag %}checked{% endif %}
+                   class="rounded border-border bg-card text-accent focus:ring-accent focus:ring-offset-bg">
+            <span class="text-ink-2 font-mono text-xs">{{ t }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Snooze toggle ===================================== #}
+    <div class="pt-3 border-t border-border">
+      <label class="flex items-center gap-2 cursor-pointer text-sm">
+        <input type="checkbox" name="show_snoozed" value="1"
+               {% if filters.show_snoozed %}checked{% endif %}
+               class="rounded border-border bg-card text-accent focus:ring-accent focus:ring-offset-bg">
+        <span class="text-ink-2">Show snoozed</span>
+      </label>
+    </div>
+
+    {# Active-filter clear button ======================== #}
+    {% set active_count = (filters.status|length) + (filters.age|length) + (filters.source|length) + (filters.tag|length) %}
+    {% if active_count or filters.show_snoozed %}
+      <a href="{{ url_for('index') }}{% if filters.q %}?q={{ filters.q }}{% endif %}"
+         class="block text-center text-xs text-ink-3 hover:text-accent transition border border-border rounded py-2 mt-2">
+        Clear {{ active_count }} filter{{ 's' if active_count != 1 else '' }}
+      </a>
+    {% endif %}
+  </form>
+</aside>

@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}{{ 'New opportunity' if mode == 'new' else 'Edit — ' + opp.company }}{% endblock %}
+{% block content %}
+
+<div class="max-w-3xl">
+  <div class="mb-6">
+    <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">
+      {% if mode == 'new' %}
+        New opportunity
+      {% else %}
+        {{ opp.company }}
+      {% endif %}
+    </h1>
+    {% if mode == 'edit' %}
+      <p class="text-ink-3 text-sm mt-1">{{ opp.role }}</p>
+    {% endif %}
+  </div>
+
+  {#
+    Reusable input/select/label classes — Tailwind's preflight strips form
+    styling, so we re-establish a consistent look here. Defining them as
+    Jinja set-blocks below would be slightly DRYer, but for the size of
+    this form, copy-paste is more readable.
+  #}
+
+  <form method="POST" class="space-y-5" novalidate>
+
+    {% if mode == 'new' %}
+    {#
+      LLM paste-to-fill panel. Only on /new — editing an existing record
+      shouldn't get bulk-overwritten by an extraction.
+
+      Why <details>: collapsed by default so the form looks clean for
+      people typing manually. Open it when you have a posting to paste.
+
+      How it works: textarea + button. Button sends a POST to /api/extract
+      via fetch (not htmx, because we want to manipulate multiple form
+      inputs from a single JSON response — that's outside HTMX's swap
+      model). On success, fill_extracted_fields() walks the JSON and
+      updates the form below. The user reviews and clicks Save.
+    #}
+    <details class="rounded-lg border border-border bg-card overflow-hidden" {% if paste_seed %}open{% endif %}>
+      <summary class="cursor-pointer list-none px-5 py-4 hover:bg-card-2 transition select-none">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-widest text-ink-3">Paste &amp; extract</span>
+            <span class="ml-3 text-sm text-ink-2">Fill the form from a job posting using Claude.</span>
+          </div>
+          <span class="text-ink-3">▾</span>
+        </div>
+      </summary>
+      <div class="px-5 pb-5 space-y-3 border-t border-border pt-4">
+        {% if not llm_available() %}
+          <div class="text-sm text-amber-300 bg-amber-950/30 border border-amber-900/50 rounded p-3">
+            Set <span class="font-mono text-xs">ANTHROPIC_API_KEY</span> in your environment to enable extraction.
+            See README for setup.
+          </div>
+        {% endif %}
+        <textarea id="paste-text" rows="8" placeholder="Paste a job posting (description, requirements, salary range)…"
+          class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 text-sm focus:border-accent focus:outline-none transition resize-y font-mono">{{ paste_seed or '' }}</textarea>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button type="button" id="extract-btn" {% if not llm_available() %}disabled{% endif %}
+            class="px-4 py-2 rounded bg-accent hover:bg-accent-2 text-bg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Extract with Claude
+          </button>
+          <span id="extract-status" class="text-xs text-ink-3"></span>
+        </div>
+      </div>
+    </details>
+    {% endif %}
+
+    <!-- The Job ============================================== -->
+    <section class="rounded-lg border border-border bg-card p-5 space-y-4">
+      <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3">The Job</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Company <span class="text-accent">*</span></label>
+          <input name="company" value="{{ opp.company }}" required autofocus
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Role <span class="text-accent">*</span></label>
+          <input name="role" value="{{ opp.role }}" required
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Location</label>
+          <input name="location" value="{{ opp.location }}" placeholder="City, region, or 'Remote'"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Work mode</label>
+          <select name="work_mode"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+            <option value="">—</option>
+            {% for m in WORK_MODES %}
+              <option value="{{ m }}" {% if opp.work_mode == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Salary min</label>
+          <input name="salary_min" type="text" inputmode="numeric"
+            value="{{ opp.salary_min or '' }}" placeholder="e.g. 120000"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 font-mono focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Salary max</label>
+          <input name="salary_max" type="text" inputmode="numeric"
+            value="{{ opp.salary_max or '' }}" placeholder="e.g. 150000"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 font-mono focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-ink-2 mb-1.5">Posting URL</label>
+          <input name="url" type="url" value="{{ opp.url }}" placeholder="https://…"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Source</label>
+          <select name="source"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+            <option value="">—</option>
+            {% for s in SOURCES %}
+              <option value="{{ s }}" {% if opp.source == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Status</label>
+          <select name="status"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+            {% for s in STATUSES %}
+              <option value="{{ s }}" {% if opp.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-ink-2 mb-1.5">
+            Close reason <span class="text-ink-3">(only if status is "closed")</span>
+          </label>
+          <select name="close_reason"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+            <option value="">—</option>
+            {% for r in CLOSE_REASONS %}
+              <option value="{{ r }}" {% if opp.close_reason == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Recruiter ============================================ -->
+    <section class="rounded-lg border border-border bg-card p-5 space-y-4">
+      <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3">Recruiter</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Name</label>
+          <input name="recruiter_name" value="{{ opp.recruiter.name }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Agency</label>
+          <input name="recruiter_org" value="{{ opp.recruiter.org }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Phone</label>
+          <input name="recruiter_phone" type="tel" value="{{ opp.recruiter.phone }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink font-mono focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Email</label>
+          <input name="recruiter_email" type="email" value="{{ opp.recruiter.email }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-ink-2 mb-1.5">LinkedIn URL</label>
+          <input name="recruiter_linkedin" type="url" value="{{ opp.recruiter.linkedin }}"
+            placeholder="https://linkedin.com/in/…"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+        </div>
+      </div>
+    </section>
+
+    <!-- Hiring contact ====================================== -->
+    <section class="rounded-lg border border-border bg-card p-5 space-y-4">
+      <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3">Hiring Contact</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Name</label>
+          <input name="hiring_name" value="{{ opp.hiring_contact.name }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Their role</label>
+          <input name="hiring_role" value="{{ opp.hiring_contact.org }}" placeholder="e.g. VP Engineering"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Phone</label>
+          <input name="hiring_phone" type="tel" value="{{ opp.hiring_contact.phone }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink font-mono focus:border-accent focus:outline-none transition">
+        </div>
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Email</label>
+          <input name="hiring_email" type="email" value="{{ opp.hiring_contact.email }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-ink-2 mb-1.5">LinkedIn URL</label>
+          <input name="hiring_linkedin" type="url" value="{{ opp.hiring_contact.linkedin }}"
+            placeholder="https://linkedin.com/in/…"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+        </div>
+      </div>
+    </section>
+
+    <!-- Interview ============================================ -->
+    <section class="rounded-lg border border-border bg-card p-5 space-y-4">
+      <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3">Interview</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-ink-2 mb-1.5">Date &amp; time</label>
+          <input name="interview_at" type="datetime-local"
+            value="{{ opp.interview_at[:16] if opp.interview_at else '' }}"
+            class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+          <p class="text-xs text-ink-3 mt-1.5">Local time. The detail page generates an .ics for your calendar.</p>
+        </div>
+        <div class="flex items-end">
+          <label class="flex items-center gap-2 cursor-pointer text-sm pb-2">
+            <input type="checkbox" name="thank_you_sent"
+                   {% if opp.thank_you_sent %}checked{% endif %}
+                   class="rounded border-border bg-bg text-accent focus:ring-accent focus:ring-offset-bg">
+            <span class="text-ink-2">Thank-you sent</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions ============================================= -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit"
+        class="px-5 py-2.5 rounded bg-accent hover:bg-accent-2 text-bg font-medium transition">
+        {{ 'Create' if mode == 'new' else 'Save changes' }}
+      </button>
+      <a href="{% if mode == 'edit' %}{{ url_for('detail', opp_id=opp.id) }}{% else %}{{ url_for('index') }}{% endif %}"
+        class="px-4 py-2.5 text-ink-3 hover:text-ink transition">Cancel</a>
+    </div>
+
+  </form>
+</div>
+
+{% if mode == 'new' %}
+<script>
+{#
+  Wire up the "Extract with Claude" button.
+
+  Why fetch() instead of HTMX: we need to take ONE JSON response and
+  update SEVERAL form inputs scattered across the page. HTMX's swap
+  model is one-target, so we'd need awkward out-of-band swap tricks.
+  fetch + a small helper is more direct.
+
+  Field-fill semantics:
+    - String fields: only fill if currently empty (don't overwrite
+      what the user typed). Exception: if the user dragged the form
+      from a bookmarklet seed, those values are eligible to be
+      overwritten by the extraction (intentional — extraction wins
+      over scraped page title).
+    - Numeric salary: fill if input is currently empty.
+    - Selects: only fill if the value is in the option list.
+#}
+(function() {
+  const btn = document.getElementById('extract-btn');
+  if (!btn) return;
+  const status = document.getElementById('extract-status');
+  const textarea = document.getElementById('paste-text');
+
+  function setVal(name, val) {
+    if (val === null || val === undefined || val === '') return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    if (el.tagName === 'SELECT') {
+      // Only set if the option exists
+      if ([...el.options].some(o => o.value === val)) el.value = val;
+    } else if (!el.value || el.dataset.bookmarkletSeed === '1') {
+      el.value = val;
+    }
+  }
+
+  btn.addEventListener('click', async () => {
+    const text = textarea.value.trim();
+    if (!text) { status.textContent = 'Paste something first.'; return; }
+
+    btn.disabled = true;
+    status.textContent = 'Extracting…';
+
+    const fd = new FormData();
+    fd.append('text', text);
+    try {
+      const resp = await fetch("{{ url_for('api_extract') }}", { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (!data.ok) {
+        status.textContent = data.error || 'Extraction failed.';
+        return;
+      }
+      const f = data.fields || {};
+      setVal('company',  f.company);
+      setVal('role',     f.role);
+      setVal('location', f.location);
+      setVal('work_mode', f.work_mode);
+      setVal('url',      f.url);
+      if (f.salary_min) setVal('salary_min', String(f.salary_min));
+      if (f.salary_max) setVal('salary_max', String(f.salary_max));
+      status.textContent = 'Filled — review the fields below before saving.';
+      status.classList.add('text-emerald-300');
+    } catch (e) {
+      status.textContent = 'Network error: ' + e.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

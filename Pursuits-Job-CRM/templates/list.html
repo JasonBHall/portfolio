@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Active — Pursuits{% endblock %}
+{% block content %}
+
+{# Header: title + count + search ----------------------------------- #}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+  <div>
+    <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">Active</h1>
+    <p class="text-ink-3 text-sm mt-1">{{ opps|length }} opportunit{{ 'y' if opps|length == 1 else 'ies' }} in flight</p>
+  </div>
+
+  <div class="relative w-full sm:w-72">
+    <input type="search" name="q" value="{{ q or '' }}" placeholder="Search company, role, contact…"
+      hx-get="{{ url_for('index') }}"
+      hx-trigger="input changed delay:200ms, search"
+      hx-target="#opp-list-wrapper"
+      hx-push-url="true"
+      hx-include="#filter-form"
+      hx-indicator="#search-spinner"
+      class="w-full px-3 py-2 pr-9 bg-card border border-border rounded text-ink placeholder-ink-3 focus:border-accent focus:outline-none transition">
+    <span id="search-spinner" class="htmx-indicator absolute right-3 top-2.5 text-ink-3 text-xs font-mono pointer-events-none">…</span>
+  </div>
+</div>
+
+{# Two-column layout: filter sidebar + main list ------------------- #}
+<div class="grid grid-cols-1 lg:grid-cols-[14rem_minmax(0,1fr)] gap-6">
+
+  {# Filter sidebar — collapsible on mobile via <details> #}
+  <details class="lg:open" open>
+    <summary class="lg:hidden cursor-pointer list-none rounded border border-border bg-card px-4 py-2.5 text-sm text-ink-2 hover:bg-card-2 transition select-none">
+      <span class="font-mono uppercase text-xs tracking-wider">Filters</span>
+      <span class="float-right text-ink-3">▾</span>
+    </summary>
+    <div class="mt-4 lg:mt-0">
+      {% include "_filter_sidebar.html" %}
+    </div>
+  </details>
+
+  <div class="min-w-0">
+
+    {# Sort header — only meaningful on desktop, only when we have rows #}
+    {% if opps %}
+      <div class="hidden md:grid opp-row !py-2 !px-4 mb-2 rounded border border-border bg-bg/50 text-xs font-mono uppercase tracking-wider text-ink-3">
+        {% set columns = [
+          ('company', 'Company', 'cell-co'),
+          ('role', 'Role', 'cell-role'),
+          ('status', 'Status / Age', 'cell-status'),
+          ('updated_at', 'Updated', 'cell-date'),
+        ] %}
+        {% for col, label, cell_cls in columns %}
+          {% set is_active = sort == col %}
+          {% set new_dir = 'asc' if (is_active and dir == 'desc') else 'desc' %}
+          <a href="?sort={{ col }}&dir={{ new_dir }}{% if q %}&q={{ q }}{% endif %}"
+             class="{{ cell_cls }} hover:text-ink transition">
+            {{ label }}{% if is_active %} <span class="text-accent">{{ '↓' if dir == 'desc' else '↑' }}</span>{% endif %}
+          </a>
+        {% endfor %}
+        <span class="cell-actions"></span>
+      </div>
+    {% endif %}
+
+    <div id="opp-list-wrapper">
+      {% include "_list_body.html" %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

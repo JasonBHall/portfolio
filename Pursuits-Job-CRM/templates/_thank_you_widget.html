@@ -1,0 +1,19 @@
+{# Toggleable thank-you state. Self-contained so the toggle endpoint
+   can swap it in place. #}
+<div id="thank-you-widget" class="inline-flex">
+  {% if opp.thank_you_sent %}
+    <button hx-post="{{ url_for('toggle_thank_you', opp_id=opp.id) }}"
+            hx-target="#thank-you-widget"
+            hx-swap="outerHTML"
+            class="px-3 py-1.5 rounded text-xs border border-emerald-900/60 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-950/60 transition font-mono">
+      ✓ thank-you sent
+    </button>
+  {% else %}
+    <button hx-post="{{ url_for('toggle_thank_you', opp_id=opp.id) }}"
+            hx-target="#thank-you-widget"
+            hx-swap="outerHTML"
+            class="px-3 py-1.5 rounded text-xs border border-border bg-card hover:border-accent-2 hover:text-accent transition font-mono text-ink-2">
+      mark thank-you sent
+    </button>
+  {% endif %}
+</div>

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Archive — Pursuits{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">Archive</h1>
+  <p class="text-ink-3 text-sm mt-1">{{ opps|length }} archived · still searchable, still here when you need them</p>
+</div>
+
+{% if opps %}
+  <div class="space-y-3">
+    {% for o in opps %}
+      <div class="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <a href="{{ url_for('detail', opp_id=o.id) }}" class="min-w-0 flex-1 group">
+          <div class="font-medium text-ink-2 group-hover:text-ink truncate transition">
+            {{ o.company }} <span class="text-ink-3">·</span> {{ o.role }}
+          </div>
+          <div class="text-xs text-ink-3 font-mono mt-0.5">archived {{ o.archived_at|datefmt }}</div>
+        </a>
+        <form method="POST" action="{{ url_for('restore_action', opp_id=o.id) }}">
+          <button type="submit"
+            class="px-3 py-1.5 rounded border border-border bg-bg hover:bg-card-2 hover:border-accent-2 hover:text-accent text-ink-2 text-sm transition">
+            Restore
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="rounded-lg border border-border bg-card p-12 text-center">
+    <p class="font-display italic text-2xl text-ink-2 mb-1">Empty.</p>
+    <p class="text-ink-3 text-sm">Archived opportunities will appear here.</p>
+  </div>
+{% endif %}
+
+{% endblock %}

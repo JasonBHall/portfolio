@@ -1,0 +1,31 @@
+{#
+  A single note in the timeline.
+
+  Used both in the initial render and as the HTMX response when a new
+  note is added. The wrapper has id="note-<id>" so deletion can target
+  it via "closest .note-item".
+#}
+{% set type_class = {
+  'call':    'border-l-accent text-accent',
+  'meeting': 'border-l-blue-400/70 text-blue-300',
+  'email':   'border-l-emerald-400/70 text-emerald-300',
+  'note':    'border-l-ink-3 text-ink-3',
+}.get(note.type, 'border-l-ink-3 text-ink-3') %}
+
+<div id="note-{{ note.id }}" class="note-item group relative pl-4 py-3 border-l-2 {{ type_class.split(' ')[0] }} hover:bg-card-2/40 transition">
+  <div class="flex items-baseline gap-2 mb-1">
+    <span class="text-xs font-mono uppercase tracking-wider {{ type_class.split(' ')[1] }}">{{ note.type }}</span>
+    <span class="text-xs text-ink-3 font-mono">{{ note.ts|timeago }}</span>
+    <span class="text-xs text-ink-3/60 font-mono ml-auto">{{ note.ts[:16].replace('T', ' ') }}</span>
+  </div>
+  <div class="text-ink whitespace-pre-wrap text-sm leading-relaxed">{{ note.body }}</div>
+
+  {# Delete button — appears on hover, ghosts out the row before removal #}
+  <button type="button"
+          hx-post="{{ url_for('delete_note', opp_id=opp.id, note_id=note.id) }}"
+          hx-target="closest .note-item"
+          hx-swap="outerHTML swap:200ms"
+          hx-confirm="Delete this note?"
+          class="absolute top-3 right-2 opacity-0 group-hover:opacity-100 transition text-xs text-ink-3 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-card-2"
+          title="Delete note">×</button>
+</div>

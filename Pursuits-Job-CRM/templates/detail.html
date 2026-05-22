@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block title %}{{ opp.company }} — {{ opp.role }}{% endblock %}
+{% block content %}
+
+<div class="max-w-5xl">
+
+  <!-- Header --------------------------------------------------- -->
+  {% set bucket = age_bucket(opp.last_contact_at) %}
+  {% set bucket_class = {
+    'fresh':    'bg-emerald-950/40 text-emerald-300 border-emerald-900/50',
+    'aging':    'bg-card text-ink-2 border-border',
+    'stale_2w': 'bg-amber-950/40 text-amber-300 border-amber-900/50',
+    'stale_1m': 'bg-orange-950/40 text-orange-300 border-orange-900/50',
+    'stale_3m': 'bg-red-950/40 text-red-300 border-red-900/50',
+  }.get(bucket, 'bg-card text-ink-2 border-border') %}
+
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+    <div class="min-w-0">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs font-mono uppercase tracking-widest text-ink-3">{{ opp.status }}</span>
+        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border {{ bucket_class }}"
+              title="Last contact {{ opp.last_contact_at|timeago }}">{{ AGE_BUCKET_LABELS[bucket] }}</span>
+        {% if is_snoozed(opp.snoozed_until) %}
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-border bg-card text-ink-3"
+                title="Snoozed until {{ opp.snoozed_until|datefmt }}">⌛ snoozed</span>
+        {% endif %}
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">{{ opp.company }}</h1>
+      <p class="text-ink-2 mt-1">
+        {{ opp.role }}{% if opp.location %} · {{ opp.location }}{% endif %}
+        {% if opp.work_mode %} · <span class="text-ink-3">{{ opp.work_mode }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="flex gap-2 shrink-0">
+      <a href="{{ url_for('edit', opp_id=opp.id) }}"
+        class="px-4 py-2 rounded border border-border bg-card hover:bg-card-2 text-ink text-sm transition">Edit</a>
+      <form method="POST" action="{{ url_for('archive_action', opp_id=opp.id) }}"
+            onsubmit="return confirm('Archive this opportunity? It can be restored later.')">
+        <button type="submit"
+          class="px-4 py-2 rounded border border-border bg-card hover:bg-red-950/40 hover:border-red-900/60 hover:text-red-200 text-ink-2 text-sm transition">
+          Archive
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Two-column grid on lg+: details on left, timeline on right -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- ============== LEFT: facts, contacts, files ============== -->
+    <div class="lg:col-span-3 space-y-4">
+
+      {% if opp.interview_at %}
+        {% set iv = opp.interview_at %}
+        {% set iv_display = iv[:16].replace('T', ' at ') %}
+        <div class="rounded-lg border border-accent-2 bg-card p-5">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 class="text-xs font-mono uppercase tracking-widest text-accent mb-2">Interview Scheduled</h3>
+              <p class="font-display italic text-2xl text-ink">{{ iv_display }}</p>
+              <p class="text-xs text-ink-3 mt-1">{{ iv|timeago }}</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              {% include "_thank_you_widget.html" %}
+              <a href="{{ url_for('export_ics', opp_id=opp.id) }}"
+                 class="px-3 py-1.5 rounded bg-accent hover:bg-accent-2 text-bg text-xs font-medium transition inline-flex items-center gap-1.5">
+                <span>📅</span> .ics
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Facts grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {% if opp.salary_min or opp.salary_max %}
+        <div class="rounded-lg border border-border bg-card p-5">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Compensation</h3>
+          <p class="text-ink font-display text-xl">
+            {{ '${:,}'.format(opp.salary_min) if opp.salary_min else '—' }}
+            <span class="text-ink-3 mx-1">·</span>
+            {{ '${:,}'.format(opp.salary_max) if opp.salary_max else '—' }}
+          </p>
+        </div>
+        {% endif %}
+
+        {% if opp.source %}
+        <div class="rounded-lg border border-border bg-card p-5">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Source</h3>
+          <p class="text-ink">{{ opp.source }}</p>
+        </div>
+        {% endif %}
+
+        {% if opp.close_reason %}
+        <div class="rounded-lg border border-border bg-card p-5 sm:col-span-2">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Close reason</h3>
+          <p class="text-ink">{{ opp.close_reason }}</p>
+        </div>
+        {% endif %}
+
+        {% if opp.url %}
+        <div class="rounded-lg border border-border bg-card p-5 sm:col-span-2">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Posting</h3>
+          <a href="{{ opp.url }}" target="_blank" rel="noopener"
+             class="text-accent hover:underline break-all text-sm">{{ opp.url }}</a>
+        </div>
+        {% endif %}
+
+        {% if opp.recruiter.name or opp.recruiter.email or opp.recruiter.phone or opp.recruiter.linkedin %}
+        <div class="rounded-lg border border-border bg-card p-5">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">Recruiter</h3>
+          {% if opp.recruiter.name %}<p class="text-ink font-medium">{{ opp.recruiter.name }}</p>{% endif %}
+          {% if opp.recruiter.org %}<p class="text-ink-2 text-sm">{{ opp.recruiter.org }}</p>{% endif %}
+          <div class="mt-3 space-y-1">
+            {% if opp.recruiter.email %}
+              <p class="text-sm"><a href="mailto:{{ opp.recruiter.email }}" class="text-accent hover:underline">{{ opp.recruiter.email }}</a></p>
+            {% endif %}
+            {% if opp.recruiter.phone %}
+              <p class="text-sm font-mono"><a href="tel:{{ opp.recruiter.phone }}" class="text-accent hover:underline">{{ opp.recruiter.phone }}</a></p>
+            {% endif %}
+            {% if opp.recruiter.linkedin %}
+              <p class="text-sm"><a href="{{ opp.recruiter.linkedin }}" target="_blank" rel="noopener" class="text-accent hover:underline inline-flex items-center gap-1">
+                <span>LinkedIn</span><span class="text-xs text-ink-3">↗</span>
+              </a></p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if opp.hiring_contact.name or opp.hiring_contact.email or opp.hiring_contact.phone or opp.hiring_contact.linkedin %}
+        <div class="rounded-lg border border-border bg-card p-5">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">Hiring contact</h3>
+          {% if opp.hiring_contact.name %}<p class="text-ink font-medium">{{ opp.hiring_contact.name }}</p>{% endif %}
+          {% if opp.hiring_contact.org %}<p class="text-ink-2 text-sm">{{ opp.hiring_contact.org }}</p>{% endif %}
+          <div class="mt-3 space-y-1">
+            {% if opp.hiring_contact.email %}
+              <p class="text-sm"><a href="mailto:{{ opp.hiring_contact.email }}" class="text-accent hover:underline">{{ opp.hiring_contact.email }}</a></p>
+            {% endif %}
+            {% if opp.hiring_contact.phone %}
+              <p class="text-sm font-mono"><a href="tel:{{ opp.hiring_contact.phone }}" class="text-accent hover:underline">{{ opp.hiring_contact.phone }}</a></p>
+            {% endif %}
+            {% if opp.hiring_contact.linkedin %}
+              <p class="text-sm"><a href="{{ opp.hiring_contact.linkedin }}" target="_blank" rel="noopener" class="text-accent hover:underline inline-flex items-center gap-1">
+                <span>LinkedIn</span><span class="text-xs text-ink-3">↗</span>
+              </a></p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- Files / Attachments ============================================ -->
+      <section class="rounded-lg border border-border bg-card p-5">
+        <div class="flex items-baseline justify-between mb-4">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3">Files</h3>
+          <span class="text-xs text-ink-3 font-mono">{{ opp.attachments|length }}</span>
+        </div>
+
+        {#
+          Drop zone.
+
+          Two input paths to the same endpoint:
+
+          1) Desktop drag-and-drop. Plain HTML5 drag events on the
+             outer div. JavaScript at the bottom of this template wires
+             them up — preventDefault on dragover (otherwise drop is
+             blocked), then on drop we build a FormData and use
+             htmx.ajax() to send it. Why not use hx-on::drop? Because
+             the dropped File objects aren't in the DOM and HTMX's
+             default form serialization can't reach them. Manually
+             building FormData is the cleanest path.
+
+          2) Tap to open file picker. The hidden <input type=file>
+             handles touchscreens and accessibility. Clicking the drop
+             zone triggers click() on the hidden input. The input has
+             hx-trigger="change" so picking files fires the upload via
+             HTMX automatically.
+
+          The grid below is the swap target. New cards prepend with
+          hx-swap="afterbegin".
+        #}
+        <div id="dropzone-{{ opp.id }}"
+             class="dropzone rounded-lg border-2 border-dashed border-border hover:border-accent-2 transition cursor-pointer p-8 text-center mb-4 relative"
+             data-opp-id="{{ opp.id }}"
+             tabindex="0"
+             role="button"
+             aria-label="Drop files here or tap to browse">
+
+          <input type="file"
+                 id="filepicker-{{ opp.id }}"
+                 name="files"
+                 multiple
+                 hx-post="{{ url_for('add_attachments', opp_id=opp.id) }}"
+                 hx-target="#attachment-grid-{{ opp.id }}"
+                 hx-swap="afterbegin"
+                 hx-encoding="multipart/form-data"
+                 hx-trigger="change"
+                 class="sr-only">
+
+          <div class="pointer-events-none">
+            <svg class="mx-auto mb-3 text-ink-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/>
+            </svg>
+            <p class="text-sm text-ink-2">
+              <span class="hidden sm:inline">Drop files here or </span>
+              <span class="text-accent">tap to browse</span>
+            </p>
+            <p class="text-xs text-ink-3 mt-1 font-mono">images · pdfs · docs · 10MB max</p>
+          </div>
+
+          <div class="dropzone-busy htmx-indicator absolute inset-0 bg-card/80 backdrop-blur flex items-center justify-center text-accent text-sm">
+            uploading…
+          </div>
+        </div>
+
+        <div id="attachment-grid-{{ opp.id }}"
+             class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {% for att in opp.attachments|sort(attribute='uploaded_at', reverse=True) %}
+            {% include "_attachment_item.html" %}
+          {% endfor %}
+        </div>
+
+        {% if not opp.attachments %}
+          <p class="text-xs text-ink-3 text-center mt-2 italic">No files yet.</p>
+        {% endif %}
+      </section>
+
+    </div>
+
+    <!-- ============== RIGHT: notes timeline ============== -->
+    <div class="lg:col-span-2 space-y-4">
+
+      {% include "_snooze_widget.html" %}
+      {% include "_tags_widget.html" %}
+
+      <section class="rounded-lg border border-border bg-card p-5">
+        <div class="flex items-baseline justify-between mb-4">
+          <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3">Timeline</h3>
+          <span class="text-xs text-ink-3 font-mono">{{ opp.notes|length }}</span>
+        </div>
+
+        {#
+          New-note form.
+
+          hx-post sends to /notes; the response is a single _note_item.html
+          fragment. hx-target points at the timeline list, hx-swap="afterbegin"
+          prepends the new note. hx-on::after-request resets the form so the
+          textarea clears after submission.
+
+          The "type" select is a small picker — defaults to "note" and the
+          user can switch to "call" / "meeting" / "email" before submitting.
+          Adding a note bumps last_contact_at server-side, which is what
+          Phase 4's staleness tags will key off.
+        #}
+        <form
+          hx-post="{{ url_for('add_note', opp_id=opp.id) }}"
+          hx-target="#timeline-{{ opp.id }}"
+          hx-swap="afterbegin"
+          hx-on::after-request="if(event.detail.successful) this.reset()"
+          class="space-y-2 mb-5">
+          <div class="flex gap-2">
+            <select name="type"
+                    class="px-2 py-1.5 bg-bg border border-border rounded text-sm font-mono text-ink-2 focus:border-accent focus:outline-none transition">
+              {% for t in NOTE_TYPES %}
+                <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit"
+                    class="ml-auto px-4 py-1.5 rounded bg-accent hover:bg-accent-2 text-bg text-sm font-medium transition">
+              + Add
+            </button>
+          </div>
+          <textarea name="body" rows="3" required
+                    placeholder="What happened? Phone call summary, email gist, meeting notes…"
+                    class="w-full px-3 py-2 bg-bg border border-border rounded text-ink placeholder-ink-3 text-sm focus:border-accent focus:outline-none transition resize-none"></textarea>
+        </form>
+
+        <div id="timeline-{{ opp.id }}" class="space-y-1">
+          {% for note in opp.notes|sort(attribute='ts', reverse=True) %}
+            {% include "_note_item.html" %}
+          {% endfor %}
+          {% if not opp.notes %}
+            <p class="text-xs text-ink-3 italic text-center py-4">No notes yet. Log a call or drop a thought above.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <!-- Meta -->
+  <div class="mt-8 pt-6 border-t border-border text-xs text-ink-3 font-mono space-y-1">
+    <p>created       {{ opp.created_at[:19].replace('T', ' ') }}</p>
+    <p>updated       {{ opp.updated_at[:19].replace('T', ' ') }}</p>
+    <p>last contact  {{ opp.last_contact_at[:19].replace('T', ' ') }}</p>
+    <p class="text-ink-3/60">id  {{ opp.id }}</p>
+  </div>
+
+</div>
+
+{# ----- Drag-and-drop wiring ------------------------------------------
+  Why we need JS here at all:
+
+  HTML5 drag-and-drop fires DOM events with File objects in
+  event.dataTransfer.files. Those Files aren't in the DOM, so HTMX's
+  declarative model (which works by reading form values) can't see them.
+
+  The minimal escape hatch: catch the drop event ourselves, build a
+  FormData, and call htmx.ajax() to send it. HTMX still handles the
+  response swap, so we get all the same target/indicator behavior as
+  the picker path.
+
+  The keyboard fallback: pressing Enter or Space on the focused drop
+  zone clicks the hidden file input — same as a tap. So this works
+  with no mouse and no touchscreen.
+#}
+<script>
+(function() {
+  const zone = document.getElementById('dropzone-{{ opp.id }}');
+  const picker = document.getElementById('filepicker-{{ opp.id }}');
+  const oppId = zone.dataset.oppId;
+  if (!zone || !picker) return;
+
+  // Click / tap / keyboard → open file picker
+  zone.addEventListener('click', () => picker.click());
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      picker.click();
+    }
+  });
+
+  // Visual feedback during drag
+  let dragDepth = 0;
+  zone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragDepth++;
+    zone.classList.add('border-accent', 'bg-card-2');
+  });
+  zone.addEventListener('dragover', (e) => {
+    // dragover MUST preventDefault, otherwise the browser refuses the drop.
+    e.preventDefault();
+  });
+  zone.addEventListener('dragleave', () => {
+    dragDepth--;
+    if (dragDepth <= 0) {
+      dragDepth = 0;
+      zone.classList.remove('border-accent', 'bg-card-2');
+    }
+  });
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    zone.classList.remove('border-accent', 'bg-card-2');
+
+    const files = e.dataTransfer.files;
+    if (!files || !files.length) return;
+
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f);
+
+    // Hand off to HTMX. The `source` here is the dropzone, so the
+    // htmx-request class lands there during the upload, which makes
+    // our htmx-indicator overlay show.
+    htmx.ajax('POST', '{{ url_for("add_attachments", opp_id=opp.id) }}', {
+      source: zone,
+      target: '#attachment-grid-{{ opp.id }}',
+      swap: 'afterbegin',
+      values: fd,
+    });
+  });
+
+  // Block the page from navigating away if a file is dropped OUTSIDE
+  // the zone — really annoying default browser behavior.
+  ['dragover', 'drop'].forEach(ev => {
+    window.addEventListener(ev, (e) => {
+      if (!zone.contains(e.target)) e.preventDefault();
+    });
+  });
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,86 @@
+{#
+  A single opportunity row.
+
+  Used in three contexts:
+    1. Looped over from _list_body.html for normal page render
+    2. Returned by /<id>/status as the HTMX response (replaces just this row)
+    3. Anywhere else we need to render one opportunity inline
+
+  In Phase 4 the company cell now also shows:
+    - manual tag chips (small, flat)
+    - age bucket badge ("fresh" / "2w stale" / etc.)
+    - snooze indicator (zzz icon if snoozed)
+
+  The grid-area layout is defined in base.html — see .opp-row CSS.
+#}
+{% set bucket = age_bucket(opp.last_contact_at) %}
+{% set bucket_class = {
+  'fresh':    'bg-emerald-950/40 text-emerald-300 border-emerald-900/50',
+  'aging':    'bg-card text-ink-2 border-border',
+  'stale_2w': 'bg-amber-950/40 text-amber-300 border-amber-900/50',
+  'stale_1m': 'bg-orange-950/40 text-orange-300 border-orange-900/50',
+  'stale_3m': 'bg-red-950/40 text-red-300 border-red-900/50',
+}.get(bucket, 'bg-card text-ink-2 border-border') %}
+{% set snoozed = is_snoozed(opp.snoozed_until) %}
+
+<div id="opp-{{ opp.id }}"
+     class="opp-row border-b border-border last:border-0 hover:bg-card-2 transition {% if snoozed %}opacity-60{% endif %}">
+
+  <div class="cell-co min-w-0">
+    <a href="{{ url_for('detail', opp_id=opp.id) }}" class="block">
+      <div class="font-medium text-ink hover:text-accent transition truncate flex items-center gap-2">
+        {{ opp.company }}
+        {% if snoozed %}
+          <span class="text-ink-3 text-xs" title="Snoozed until {{ opp.snoozed_until|datefmt }}">⌛</span>
+        {% endif %}
+      </div>
+      {% if opp.location %}
+        <div class="text-xs text-ink-3 mt-0.5 truncate">{{ opp.location }}</div>
+      {% endif %}
+    </a>
+    {% if opp.tags %}
+      <div class="flex flex-wrap gap-1 mt-1.5">
+        {% for tag in opp.tags %}
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg border border-border text-ink-3">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="cell-role text-ink-2 text-sm truncate">{{ opp.role }}</div>
+
+  <div class="cell-status flex items-center gap-1.5 flex-wrap">
+    <select name="status"
+            hx-post="{{ url_for('update_status', opp_id=opp.id) }}"
+            hx-trigger="change"
+            hx-target="closest .opp-row"
+            hx-swap="outerHTML"
+            class="px-2 py-1 text-xs rounded border border-border bg-card font-mono text-ink-2 hover:border-accent-2 focus:outline-none focus:border-accent cursor-pointer transition">
+      {% for s in STATUSES %}
+        <option value="{{ s }}" {% if opp.status == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border {{ bucket_class }}"
+          title="Last contact {{ opp.last_contact_at|timeago }}">
+      {{ AGE_BUCKET_LABELS[bucket] }}
+    </span>
+  </div>
+
+  <div class="cell-date text-xs font-mono text-ink-3">
+    <span class="md:hidden text-ink-3/70">updated </span>{{ opp.updated_at|datefmt }}
+  </div>
+
+  <div class="cell-actions flex items-center gap-3 text-sm">
+    <a href="{{ url_for('edit', opp_id=opp.id) }}"
+       class="text-ink-3 hover:text-ink transition">Edit</a>
+    <button type="button"
+            hx-post="{{ url_for('archive_action', opp_id=opp.id) }}"
+            hx-target="closest .opp-row"
+            hx-swap="outerHTML swap:250ms"
+            hx-confirm="Archive {{ opp.company }} — {{ opp.role }}?"
+            class="text-ink-3 hover:text-red-300 transition">
+      Archive
+    </button>
+  </div>
+
+</div>

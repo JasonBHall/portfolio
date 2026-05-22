@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Bookmarklet — Pursuits{% endblock %}
+{% block content %}
+
+<div class="max-w-3xl">
+
+<div class="mb-6">
+  <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">Bookmarklet</h1>
+  <p class="text-ink-3 text-sm mt-1">Save any job posting to Pursuits with one click.</p>
+</div>
+
+{#
+  The bookmarklet itself.
+
+  When the user drags the link to their bookmarks bar (or right-clicks
+  → Bookmark this Link), the browser stores the href as a bookmark.
+  Clicking that bookmark on any page runs the JS in the href.
+
+  What this one does:
+    1. Reads the current page's URL, title, and any selected text
+    2. URL-encodes them
+    3. Opens http://127.0.0.1:5000/new with those values as query params
+
+  The /new route reads `url`, `company`, `role`, and `paste` query
+  params and prefills the form (see the new() route). Combined with
+  the LLM extract button, the workflow becomes: select the description
+  on a posting, click the bookmarklet, click "Extract with Claude" on
+  the form that opens, save.
+
+  The IIFE wrapper is required — without it, declaring `var u` would
+  leak into the host page's global scope and possibly conflict.
+#}
+{% set bookmarklet_js %}javascript:(function(){var u=encodeURIComponent(location.href),t=encodeURIComponent(document.title||''),s=encodeURIComponent((window.getSelection&&window.getSelection().toString())||'');window.open('{{ request.scheme }}://{{ request.host }}/new?url='+u+'&paste='+s+'&prefill_title='+t,'_blank');})();{% endset %}
+
+<section class="rounded-lg border border-border bg-card p-6 mb-5">
+  <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">Install</h2>
+  <p class="text-ink-2 mb-4">
+    Drag this button to your bookmarks bar:
+  </p>
+  <a href="{{ bookmarklet_js }}"
+     onclick="alert('Drag this link to your bookmarks bar instead of clicking it.'); return false;"
+     class="inline-block px-5 py-3 rounded bg-accent hover:bg-accent-2 text-bg font-medium transition cursor-grab active:cursor-grabbing">
+    📎 Save to Pursuits
+  </a>
+  <p class="text-xs text-ink-3 mt-4">
+    If your browser hides the bookmarks bar:
+    Chrome / Edge — <span class="font-mono">Ctrl+Shift+B</span> ·
+    Firefox — right-click toolbar → Bookmarks Toolbar →  Always Show ·
+    Safari — View → Show Favorites Bar
+  </p>
+</section>
+
+<section class="rounded-lg border border-border bg-card p-6 mb-5">
+  <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">How to use</h2>
+  <ol class="text-ink-2 space-y-2 text-sm">
+    <li><span class="text-accent font-mono mr-2">1.</span>Open a job posting in your browser (LinkedIn, Indeed, a company careers page, anything).</li>
+    <li><span class="text-accent font-mono mr-2">2.</span>Optional: select the job description with your mouse before clicking the bookmarklet — selected text comes along for extraction.</li>
+    <li><span class="text-accent font-mono mr-2">3.</span>Click the <span class="text-accent">📎 Save to Pursuits</span> bookmark.</li>
+    <li><span class="text-accent font-mono mr-2">4.</span>A new tab opens to Pursuits with the URL prefilled.{% if llm_available %} If you selected text, hit "Extract with Claude" to fill the rest.{% endif %}</li>
+    <li><span class="text-accent font-mono mr-2">5.</span>Review and Save.</li>
+  </ol>
+</section>
+
+<section class="rounded-lg border border-border bg-card p-6 mb-5">
+  <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">Manual install</h2>
+  <p class="text-ink-2 text-sm mb-3">
+    If drag-and-drop doesn't work in your browser, create a bookmark manually and paste this as the URL:
+  </p>
+  <pre class="bg-bg border border-border rounded p-3 text-xs overflow-x-auto font-mono text-ink-2 whitespace-pre-wrap break-all">{{ bookmarklet_js }}</pre>
+</section>
+
+<section class="rounded-lg border border-dashed border-border bg-card/40 p-5 text-sm">
+  <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-2">Note</h3>
+  <p class="text-ink-3">
+    The bookmarklet points at <span class="font-mono">{{ request.scheme }}://{{ request.host }}</span> —
+    the URL you're viewing right now. If you change the port your Flask app runs on, come back to this
+    page and re-drag the link to update it.
+  </p>
+</section>
+
+</div>
+{% endblock %}

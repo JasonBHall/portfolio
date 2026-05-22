@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Today — Pursuits{% endblock %}
+{% block content %}
+
+<div class="mb-8">
+  <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">Today</h1>
+  <p class="text-ink-3 text-sm mt-1 font-mono">{{ now_iso()[:10] }}</p>
+</div>
+
+{% set total = woken|length + stale|length + upcoming|length + thank_yous|length %}
+
+{% if total == 0 %}
+  <div class="rounded-lg border border-border bg-card p-12 sm:p-16 text-center">
+    <p class="font-display italic text-2xl text-ink-2 mb-2">All clear.</p>
+    <p class="text-ink-3 text-sm">Nothing requires your attention right now.</p>
+  </div>
+{% endif %}
+
+{# A reusable mini-row component as a Jinja macro keeps each section
+   compact while still letting them differ in what badges they show. #}
+{% macro opp_link(opp, badge=None, badge_class='') %}
+  <a href="{{ url_for('detail', opp_id=opp.id) }}"
+     class="flex items-center justify-between gap-4 p-3 rounded border border-border bg-bg hover:bg-card-2 hover:border-accent-2 transition">
+    <div class="min-w-0 flex-1">
+      <div class="font-medium text-ink truncate">{{ opp.company }}</div>
+      <div class="text-xs text-ink-3 truncate">{{ opp.role }}{% if opp.location %} · {{ opp.location }}{% endif %}</div>
+    </div>
+    {% if badge %}
+      <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border {{ badge_class }} shrink-0">{{ badge }}</span>
+    {% endif %}
+  </a>
+{% endmacro %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+  {# ===== Upcoming interviews — first because most time-sensitive ===== #}
+  {% if upcoming %}
+  <section class="rounded-lg border border-accent-2 bg-card p-5 lg:col-span-2">
+    <div class="flex items-baseline justify-between mb-4">
+      <h2 class="font-display italic text-xl text-ink">Upcoming interviews</h2>
+      <span class="text-xs text-ink-3 font-mono">next 7 days · {{ upcoming|length }}</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {% for o in upcoming %}
+        {{ opp_link(o, badge=o.interview_at[:16].replace('T', ' '), badge_class='border-accent-2 text-accent bg-bg') }}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ===== Snoozes that have woken up ===== #}
+  {% if woken %}
+  <section class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-baseline justify-between mb-4">
+      <h2 class="font-display italic text-xl text-ink">Woke up</h2>
+      <span class="text-xs text-ink-3 font-mono">{{ woken|length }}</span>
+    </div>
+    <p class="text-xs text-ink-3 mb-3">You snoozed these. They're back.</p>
+    <div class="space-y-2">
+      {% for o in woken %}
+        {{ opp_link(o, badge='⌛ ' + o.snoozed_until|datefmt, badge_class='border-border text-ink-3 bg-bg') }}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ===== Stale follow-ups ===== #}
+  {% if stale %}
+  <section class="rounded-lg border border-border bg-card p-5">
+    <div class="flex items-baseline justify-between mb-4">
+      <h2 class="font-display italic text-xl text-ink">Needs follow-up</h2>
+      <span class="text-xs text-ink-3 font-mono">{{ stale|length }}</span>
+    </div>
+    <p class="text-xs text-ink-3 mb-3">No contact in 2+ weeks.</p>
+    <div class="space-y-2">
+      {% for o in stale %}
+        {% set bk = age_bucket(o.last_contact_at) %}
+        {% set bk_class = {
+          'stale_2w': 'border-amber-900/50 text-amber-300 bg-amber-950/30',
+          'stale_1m': 'border-orange-900/50 text-orange-300 bg-orange-950/30',
+          'stale_3m': 'border-red-900/50 text-red-300 bg-red-950/30',
+        }.get(bk, '') %}
+        {{ opp_link(o, badge=AGE_BUCKET_LABELS[bk], badge_class=bk_class) }}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ===== Outstanding thank-yous ===== #}
+  {% if thank_yous %}
+  <section class="rounded-lg border border-border bg-card p-5 lg:col-span-2">
+    <div class="flex items-baseline justify-between mb-4">
+      <h2 class="font-display italic text-xl text-ink">Thank-you outstanding</h2>
+      <span class="text-xs text-ink-3 font-mono">{{ thank_yous|length }}</span>
+    </div>
+    <p class="text-xs text-ink-3 mb-3">Past interview, no thank-you sent. Open the opportunity to mark it done.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {% for o in thank_yous %}
+        {{ opp_link(o, badge=o.interview_at[:10], badge_class='border-border text-ink-3 bg-bg') }}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+
+{% endblock %}

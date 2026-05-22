@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Pursuits{% endblock %}
+{% block content %}
+
+{# Chart.js loaded via CDN. ~80KB. We load it on this page only, not
+   in base.html, since dashboard is the only place that needs it. #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="mb-6 flex items-end justify-between gap-4">
+  <div>
+    <h1 class="text-3xl sm:text-4xl font-display italic font-medium tracking-tight">Dashboard</h1>
+    <p class="text-ink-3 text-sm mt-1">A snapshot of your pipeline.</p>
+  </div>
+</div>
+
+{# ----- Headline tiles ----------------------------------------------- #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  {% set tiles = [
+    ('Total',       headline.total,       'text-ink'),
+    ('Active',      headline.active,      'text-accent'),
+    ('In flight',   headline.interviews,  'text-emerald-300'),
+    ('Offers',      headline.offers,      'text-amber-300'),
+  ] %}
+  {% for label, val, cls in tiles %}
+    <div class="rounded-lg border border-border bg-card p-4">
+      <div class="text-xs font-mono uppercase tracking-wider text-ink-3 mb-1">{{ label }}</div>
+      <div class="font-display italic text-3xl {{ cls }}">{{ val }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+{% if headline.closed %}
+  <div class="rounded-lg border border-border bg-card/60 p-4 mb-6 text-sm">
+    <span class="text-xs font-mono uppercase tracking-wider text-ink-3 mr-3">Closed</span>
+    <span class="text-ink-2">{{ headline.closed }} total</span>
+    {% if headline.accepted %}<span class="ml-3 text-emerald-300">{{ headline.accepted }} accepted</span>{% endif %}
+    {% if headline.rejected %}<span class="ml-3 text-red-300">{{ headline.rejected }} rejected</span>{% endif %}
+    {% if headline.ghosted %}<span class="ml-3 text-ink-3">{{ headline.ghosted }} ghosted</span>{% endif %}
+  </div>
+{% endif %}
+
+{# ----- Charts ------------------------------------------------------- #}
+{% if headline.total == 0 %}
+  <div class="rounded-lg border border-border bg-card p-12 text-center">
+    <p class="font-display italic text-2xl text-ink-2 mb-2">No data yet.</p>
+    <p class="text-ink-3 text-sm">Add some opportunities to see the pipeline come to life.</p>
+  </div>
+{% else %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+  <section class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-4">Pipeline funnel</h2>
+    <div class="relative h-72"><canvas id="chart-funnel"></canvas></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-5">
+    <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-4">Status distribution</h2>
+    <div class="relative h-72"><canvas id="chart-status"></canvas></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-5 lg:col-span-2">
+    <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-4">Activity by week (last 12, by source)</h2>
+    <div class="relative h-72"><canvas id="chart-activity"></canvas></div>
+  </section>
+
+  <section class="rounded-lg border border-border bg-card p-5 lg:col-span-2">
+    <h2 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-4">Age distribution</h2>
+    <p class="text-xs text-ink-3 mb-4">When you're ignoring opportunities, this lights up red.</p>
+    <div class="relative h-64"><canvas id="chart-age"></canvas></div>
+  </section>
+
+</div>
+
+<script>
+{#
+  Chart.js dark-theme setup.
+
+  Why we configure defaults globally instead of per-chart: every chart
+  needs the same gridline color, tick color, and legend color. Setting
+  them once on Chart.defaults keeps each chart config focused on its
+  data and structure.
+
+  The data flows from server -> page via |tojson — Jinja serializes the
+  Python dicts into JSON that JavaScript can use directly.
+#}
+(function() {
+  // Match the warm-dark palette from base.html
+  const ink = '#f5f0e8';
+  const ink2 = '#a8a098';
+  const ink3 = '#6b645d';
+  const border = '#2a2724';
+  const accent = '#d4a574';
+
+  // Sequential palette for funnel/status — copper through warmer tones
+  const seq = ['#d4a574', '#c4946a', '#b08560', '#9a7456', '#85634d', '#6b5440', '#52432f'];
+  // Age bucket colors — match the row badges
+  const ageColors = {
+    'Fresh':     '#34d399',  // emerald
+    'Aging':     '#a8a098',  // ink-2
+    '2w stale':  '#fbbf24',  // amber
+    '1m stale':  '#fb923c',  // orange
+    '3m+ stale': '#f87171',  // red
+  };
+  // Diverse palette for sources (stacked bar)
+  const sourcePalette = ['#d4a574', '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#fb923c'];
+
+  // Apply dark defaults globally
+  Chart.defaults.color = ink2;
+  Chart.defaults.borderColor = border;
+  Chart.defaults.font.family = "'Geist', system-ui, sans-serif";
+  Chart.defaults.plugins.legend.labels.color = ink2;
+  Chart.defaults.plugins.tooltip.backgroundColor = '#161513';
+  Chart.defaults.plugins.tooltip.titleColor = ink;
+  Chart.defaults.plugins.tooltip.bodyColor = ink2;
+  Chart.defaults.plugins.tooltip.borderColor = border;
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+  const gridCfg = { color: border, drawTicks: false };
+
+  // Server data (Python dicts -> JSON)
+  const funnel   = {{ funnel|tojson }};
+  const activity = {{ activity|tojson }};
+  const age      = {{ age|tojson }};
+  const status   = {{ status|tojson }};
+
+  // ---- Funnel: horizontal bar -------------------------------------
+  new Chart(document.getElementById('chart-funnel'), {
+    type: 'bar',
+    data: {
+      labels: funnel.labels,
+      datasets: [{
+        label: 'count',
+        data: funnel.data,
+        backgroundColor: funnel.labels.map((_, i) => seq[i % seq.length]),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: gridCfg, ticks: { precision: 0 }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { color: ink2, font: { family: "'JetBrains Mono', monospace", size: 11 } } },
+      },
+    },
+  });
+
+  // ---- Status donut -----------------------------------------------
+  new Chart(document.getElementById('chart-status'), {
+    type: 'doughnut',
+    data: {
+      labels: status.labels,
+      datasets: [{
+        data: status.data,
+        backgroundColor: status.labels.map((_, i) => seq[i % seq.length]),
+        borderColor: '#161513',
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font: { family: "'JetBrains Mono', monospace", size: 11 } } },
+      },
+    },
+  });
+
+  // ---- Activity stacked bar ---------------------------------------
+  new Chart(document.getElementById('chart-activity'), {
+    type: 'bar',
+    data: {
+      labels: activity.labels,
+      datasets: activity.datasets.map((ds, i) => ({
+        ...ds,
+        backgroundColor: sourcePalette[i % sourcePalette.length],
+        borderRadius: 2,
+        borderSkipped: false,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: ink3, font: { family: "'JetBrains Mono', monospace", size: 10 } } },
+        y: { stacked: true, grid: gridCfg, ticks: { precision: 0 }, beginAtZero: true },
+      },
+    },
+  });
+
+  // ---- Age bar (vertical, color-coded) ----------------------------
+  new Chart(document.getElementById('chart-age'), {
+    type: 'bar',
+    data: {
+      labels: age.labels,
+      datasets: [{
+        data: age.data,
+        backgroundColor: age.labels.map(l => ageColors[l] || ink3),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: ink2, font: { family: "'JetBrains Mono', monospace", size: 11 } } },
+        y: { grid: gridCfg, ticks: { precision: 0 }, beginAtZero: true },
+      },
+    },
+  });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

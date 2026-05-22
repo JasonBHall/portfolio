@@ -1,0 +1,41 @@
+{#
+  Snooze widget. Returned as a self-contained partial so the snooze
+  POST handler can swap it in place with its updated state.
+
+  The wrapper has id="snooze-widget" so hx-target can find it.
+#}
+{% set snoozed = is_snoozed(opp.snoozed_until) %}
+<div id="snooze-widget" class="rounded-lg border border-border bg-card p-5">
+  <h3 class="text-xs font-mono uppercase tracking-widest text-ink-3 mb-3">Snooze</h3>
+
+  {% if snoozed %}
+    <p class="text-sm text-ink mb-3">
+      Snoozed until <span class="font-mono text-accent">{{ opp.snoozed_until|datefmt }}</span>
+      <span class="text-ink-3 text-xs">({{ opp.snoozed_until|timeago }})</span>
+    </p>
+    <form hx-post="{{ url_for('set_snooze', opp_id=opp.id) }}"
+          hx-target="#snooze-widget"
+          hx-swap="outerHTML">
+      <input type="hidden" name="until" value="">
+      <button type="submit"
+              class="w-full px-3 py-2 rounded border border-border bg-bg hover:bg-card-2 hover:border-accent-2 hover:text-accent text-ink-2 text-sm transition">
+        Wake up now
+      </button>
+    </form>
+  {% else %}
+    <form hx-post="{{ url_for('set_snooze', opp_id=opp.id) }}"
+          hx-target="#snooze-widget"
+          hx-swap="outerHTML"
+          class="space-y-2">
+      <input type="date" name="until" required
+             class="w-full px-3 py-2 bg-bg border border-border rounded text-ink focus:border-accent focus:outline-none transition">
+      <button type="submit"
+              class="w-full px-3 py-2 rounded bg-card-2 hover:bg-accent hover:text-bg text-ink-2 text-sm transition">
+        Snooze until date
+      </button>
+    </form>
+    <p class="text-xs text-ink-3 mt-2">
+      Snoozed items sort to the bottom and hide unless "Show snoozed" is on.
+    </p>
+  {% endif %}
+</div>
