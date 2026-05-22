@@ -1,0 +1,449 @@
+{
+  "users": [
+    {"id": "u1", "username": "Alice", "anon_id": "Xk9mP2nQ8rTs"},
+    {"id": "u2", "username": "Bob",   "anon_id": "Ht5jW7cR3vLq"},
+    {"id": "u3", "username": "Carol", "anon_id": "Mn4bY6dF1xZp"},
+    {"id": "u4", "username": "Dave",  "anon_id": "Gs2eA0kU9wJo"}
+  ],
+  "topics": [
+    {"id": "politics",   "name": "Politics",    "approved": true, "created": "2024-01-01"},
+    {"id": "baking",     "name": "Baking",      "approved": true, "created": "2024-01-01"},
+    {"id": "autorepair", "name": "Auto Repair", "approved": true, "created": "2024-01-01"},
+    {"id": "gardening",  "name": "Gardening",   "approved": true, "created": "2024-06-15"}
+  ],
+  "posts": [
+    {
+      "id": "bk001",
+      "topic_id": "baking",
+      "title": "Why does my sourdough always come out gummy inside?",
+      "content": "I've tried three different recipes. The crust looks perfect but when I slice it the crumb is dense and gummy. Baking at 230C in a Dutch oven.",
+      "anon_id": "Xk9mP2nQ8rTs",
+      "user_id": "u1",
+      "upvotes": 5,
+      "downvotes": 0,
+      "created": "2024-06-10T09:14:00",
+      "answers": [
+        {
+          "id": "bk001a1",
+          "content": "Almost always an underproofing issue. The gummy layer near the bottom is a dead giveaway. Try extending your bulk ferment by 30-45 minutes and see if the dough passes the poke test before you shape.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 4,
+          "downvotes": 0,
+          "created": "2024-06-10T10:02:00"
+        },
+        {
+          "id": "bk001a2",
+          "content": "Also — are you letting it cool fully before slicing? Cutting into hot sourdough traps steam and makes the crumb gummy even when the bake was perfect. I wait at least an hour.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 6,
+          "downvotes": 0,
+          "created": "2024-06-10T10:28:00"
+        },
+        {
+          "id": "bk001a3",
+          "content": "Check your starter health too. If it's not doubling reliably within 4-6 hours of feeding it won't have enough oomph to leaven the dough properly regardless of timing.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 2,
+          "downvotes": 0,
+          "created": "2024-06-10T11:47:00"
+        }
+      ]
+    },
+    {
+      "id": "bk002",
+      "topic_id": "baking",
+      "title": "Best flour for high-hydration dough?",
+      "content": "Trying to hit 80% hydration but the dough just turns to soup. Is it a flour problem?",
+      "anon_id": "Gs2eA0kU9wJo",
+      "user_id": "u4",
+      "upvotes": 3,
+      "downvotes": 0,
+      "created": "2024-06-11T14:30:00",
+      "answers": [
+        {
+          "id": "bk002a1",
+          "content": "Strong bread flour is essential — you need at least 12-13% protein. All-purpose just can't form enough gluten structure to hold that much water. King Arthur bread flour is my go-to.",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-11T15:10:00"
+        },
+        {
+          "id": "bk002a2",
+          "content": "Build up gradually. Go 70%, nail that for a few bakes, then nudge to 75%. Jumping straight to 80% is brutal if you're still developing feel for the dough.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 3,
+          "downvotes": 0,
+          "created": "2024-06-11T16:00:00"
+        }
+      ]
+    },
+    {
+      "id": "bk003",
+      "topic_id": "baking",
+      "title": "Can you overfeed a sourdough starter?",
+      "content": "I've been feeding mine every 12 hours but it seems less active than when I was doing it once a day. Maybe too much?",
+      "anon_id": "Mn4bY6dF1xZp",
+      "user_id": "u3",
+      "upvotes": 2,
+      "downvotes": 0,
+      "created": "2024-06-13T08:05:00",
+      "answers": [
+        {
+          "id": "bk003a1",
+          "content": "You can absolutely dilute it too aggressively. If you're feeding 1:5:5 every 12 hours at room temp the bacteria can struggle to catch up. Try 1:2:2 for a week and see if activity picks back up.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 3,
+          "downvotes": 0,
+          "created": "2024-06-13T09:30:00"
+        }
+      ]
+    },
+    {
+      "id": "ar001",
+      "topic_id": "autorepair",
+      "title": "Check engine light came on - P0420 code. Do I need a new cat converter right away?",
+      "content": "Mechanic quoted me $1,200 for a catalytic converter. Car drives fine. Is this urgent or can it wait a few months?",
+      "anon_id": "Ht5jW7cR3vLq",
+      "user_id": "u2",
+      "upvotes": 7,
+      "downvotes": 0,
+      "created": "2024-06-09T11:20:00",
+      "answers": [
+        {
+          "id": "ar001a1",
+          "content": "P0420 isn't a drive-now-or-die situation. It means cat efficiency is below threshold, which affects emissions but usually not drivability. If the car runs fine you have time to shop around — get at least two more quotes. Aftermarket cats are often a third of the dealer price.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 6,
+          "downvotes": 0,
+          "created": "2024-06-09T12:00:00"
+        },
+        {
+          "id": "ar001a2",
+          "content": "Before you replace anything: check for exhaust leaks upstream of the cat and make sure the O2 sensors are reading correctly. A faulty downstream sensor throws P0420 all the time and a sensor is $30, not $1,200.",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 8,
+          "downvotes": 0,
+          "created": "2024-06-09T12:45:00"
+        },
+        {
+          "id": "ar001a3",
+          "content": "Agreed on the O2 sensor check. That said, if your state has emissions testing coming up in the next few months you'll need it sorted before then or you'll fail.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 3,
+          "downvotes": 0,
+          "created": "2024-06-09T13:15:00"
+        }
+      ]
+    },
+    {
+      "id": "ar002",
+      "topic_id": "autorepair",
+      "title": "How often should I actually change my oil? Manual says 5,000 miles, friend says 3,000.",
+      "content": "2019 Honda Civic, mostly city driving. Synthetic oil.",
+      "anon_id": "Mn4bY6dF1xZp",
+      "user_id": "u3",
+      "upvotes": 4,
+      "downvotes": 0,
+      "created": "2024-06-12T10:00:00",
+      "answers": [
+        {
+          "id": "ar002a1",
+          "content": "With full synthetic in a modern engine, 5,000-7,500 miles is completely fine. The 3,000 mile advice is outdated — it came from the era of conventional oil in older engines. Your manual is the right source.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-12T10:45:00"
+        },
+        {
+          "id": "ar002a2",
+          "content": "City driving is harder on oil than highway (lots of short trips, stop-start). If most of your trips are under 10 minutes I'd lean toward 5,000 rather than stretching to 7,500 — but you don't need to go to 3,000.",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 4,
+          "downvotes": 0,
+          "created": "2024-06-12T11:20:00"
+        }
+      ]
+    },
+    {
+      "id": "ar003",
+      "topic_id": "autorepair",
+      "title": "Brakes squealing only in the morning for the first few stops. Should I be worried?",
+      "content": "After the first 2-3 stops it goes away completely and the brakes feel normal.",
+      "anon_id": "Xk9mP2nQ8rTs",
+      "user_id": "u1",
+      "upvotes": 3,
+      "downvotes": 0,
+      "created": "2024-06-14T07:55:00",
+      "answers": [
+        {
+          "id": "ar003a1",
+          "content": "Likely surface rust on the rotors from overnight moisture — completely normal, especially in humid climates. The squeal burns off as the rust layer is swept away by the first few applications. If it also squeals after the car is fully warmed up, that's a different story.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 6,
+          "downvotes": 0,
+          "created": "2024-06-14T08:30:00"
+        },
+        {
+          "id": "ar003a2",
+          "content": "This is very normal and not a sign of worn pads. You'd be looking at a grinding noise or a hard pedal if the pads were actually due for replacement.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 3,
+          "downvotes": 0,
+          "created": "2024-06-14T09:00:00"
+        }
+      ]
+    },
+    {
+      "id": "pol001",
+      "topic_id": "politics",
+      "title": "Why do local elections have such low turnout compared to national ones?",
+      "content": "In my city the mayoral race last year got under 20% turnout but the presidential election hit 65%. What explains the gap?",
+      "anon_id": "Gs2eA0kU9wJo",
+      "user_id": "u4",
+      "upvotes": 6,
+      "downvotes": 0,
+      "created": "2024-06-08T15:00:00",
+      "answers": [
+        {
+          "id": "pol001a1",
+          "content": "A few things: local elections are often off-cycle (not in November), there's far less media coverage so people don't know they're happening, and the candidates are less recognisable. When an election isn't on your radar you don't vote in it.",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-08T15:45:00"
+        },
+        {
+          "id": "pol001a2",
+          "content": "There's also a perception problem — people feel like their presidential vote matters more because the race is talked about everywhere. In reality your vote for city council or school board has a much larger proportional impact because the total pool is so small.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 7,
+          "downvotes": 0,
+          "created": "2024-06-08T16:10:00"
+        },
+        {
+          "id": "pol001a3",
+          "content": "Consolidating local elections onto the general election date is one of the most evidence-backed reforms for boosting turnout. Several cities have done it and seen turnout triple. The counterargument is that local issues get drowned out by national politics.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 4,
+          "downvotes": 1,
+          "created": "2024-06-08T17:00:00"
+        }
+      ]
+    },
+    {
+      "id": "pol002",
+      "topic_id": "politics",
+      "title": "What's the actual difference between a caucus and a primary?",
+      "content": "I always see these terms during election season and nod along but I don't really understand the mechanics.",
+      "anon_id": "Mn4bY6dF1xZp",
+      "user_id": "u3",
+      "upvotes": 5,
+      "downvotes": 0,
+      "created": "2024-06-11T09:00:00",
+      "answers": [
+        {
+          "id": "pol002a1",
+          "content": "A primary is basically a normal election — you show up, cast a secret ballot, go home. A caucus is a public meeting where voters physically group themselves in the room by candidate. It's more of a community debate and negotiation process. Caucuses tend to favour candidates with more dedicated supporters who'll spend several hours on a Tuesday night.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 8,
+          "downvotes": 0,
+          "created": "2024-06-11T09:50:00"
+        },
+        {
+          "id": "pol002a2",
+          "content": "Worth noting that caucuses have been largely phased out — most states switched to primaries after 2020 because caucuses have accessibility problems (you have to show up at a specific time, can take hours, hard for shift workers or people with disabilities).",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 4,
+          "downvotes": 0,
+          "created": "2024-06-11T10:30:00"
+        }
+      ]
+    },
+    {
+      "id": "pol003",
+      "topic_id": "politics",
+      "title": "Is gerrymandering actually illegal, or just controversial?",
+      "content": "I hear politicians complain about it all the time but nothing seems to change.",
+      "anon_id": "Ht5jW7cR3vLq",
+      "user_id": "u2",
+      "upvotes": 8,
+      "downvotes": 0,
+      "created": "2024-06-13T14:00:00",
+      "answers": [
+        {
+          "id": "pol003a1",
+          "content": "Mostly legal, unfortunately. The Supreme Court ruled in 2019 (Rucho v. Common Cause) that partisan gerrymandering is a political question that federal courts can't review. Racial gerrymandering is separately illegal under the Voting Rights Act, but the line between 'we drew it to help our party' and 'we drew it to dilute minority votes' is heavily litigated.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 9,
+          "downvotes": 0,
+          "created": "2024-06-13T14:50:00"
+        },
+        {
+          "id": "pol003a2",
+          "content": "Some states have addressed it at the state level — California, Arizona, and Michigan use independent redistricting commissions instead of letting the legislature draw its own maps. It's not a federal fix but it does work in those states.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-13T15:20:00"
+        }
+      ]
+    },
+    {
+      "id": "gd001",
+      "topic_id": "gardening",
+      "title": "First time growing tomatoes — when do I actually plant them outside?",
+      "content": "I'm in zone 6b. Started seeds indoors 6 weeks ago. They're about 8 inches tall now.",
+      "anon_id": "Xk9mP2nQ8rTs",
+      "user_id": "u1",
+      "upvotes": 4,
+      "downvotes": 0,
+      "created": "2024-06-15T10:00:00",
+      "answers": [
+        {
+          "id": "gd001a1",
+          "content": "Zone 6b last frost is typically mid-April to early May. The rule of thumb is to transplant 2 weeks after your last frost date when overnight temps are reliably above 50°F. Don't rush it — tomatoes sulk in cold soil even if they survive.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-15T11:00:00"
+        },
+        {
+          "id": "gd001a2",
+          "content": "Also: harden them off first. Set them outside in a sheltered spot for a few hours a day over a week before fully planting. Going straight from indoor grow lights to full outdoor sun will stress them badly.",
+          "anon_id": "Mn4bY6dF1xZp",
+          "user_id": "u3",
+          "upvotes": 6,
+          "downvotes": 0,
+          "created": "2024-06-15T11:45:00"
+        },
+        {
+          "id": "gd001a3",
+          "content": "Plant them deep! You can bury them up to 2/3 of the stem and roots will form all along it. Gives you a much stronger plant.",
+          "anon_id": "Gs2eA0kU9wJo",
+          "user_id": "u4",
+          "upvotes": 4,
+          "downvotes": 0,
+          "created": "2024-06-15T12:10:00"
+        }
+      ]
+    },
+    {
+      "id": "gd002",
+      "topic_id": "gardening",
+      "title": "Why do my basil leaves keep turning yellow?",
+      "content": "Indoor pot on a south-facing windowsill. I water it every two days.",
+      "anon_id": "Gs2eA0kU9wJo",
+      "user_id": "u4",
+      "upvotes": 3,
+      "downvotes": 0,
+      "created": "2024-06-16T09:30:00",
+      "answers": [
+        {
+          "id": "gd002a1",
+          "content": "Almost certainly overwatering. Basil wants to dry out a little between waterings. Check the soil two inches down — if it's still damp, skip the watering. Every two days is probably too frequent for indoor conditions.",
+          "anon_id": "Xk9mP2nQ8rTs",
+          "user_id": "u1",
+          "upvotes": 5,
+          "downvotes": 0,
+          "created": "2024-06-16T10:15:00"
+        },
+        {
+          "id": "gd002a2",
+          "content": "Also check that the pot has drainage holes. Basil sitting in standing water will rot at the roots and the yellowing starts from the bottom leaves. If it doesn't drain, repot it.",
+          "anon_id": "Ht5jW7cR3vLq",
+          "user_id": "u2",
+          "upvotes": 4,
+          "downvotes": 0,
+          "created": "2024-06-16T10:55:00"
+        }
+      ]
+    }
+  ],
+  "votes": {
+    "bk001_u2": "up",
+    "bk001_u3": "up",
+    "bk001_u4": "up",
+    "bk001a1_u3": "up",
+    "bk001a1_u4": "up",
+    "bk001a1_u1": "up",
+    "bk001a2_u2": "up",
+    "bk001a2_u4": "up",
+    "bk001a2_u1": "up",
+    "bk001a3_u1": "up",
+    "bk001a3_u3": "up",
+    "bk002_u1": "up",
+    "bk002_u3": "up",
+    "bk002a1_u4": "up",
+    "bk002a1_u2": "up",
+    "bk002a2_u4": "up",
+    "bk002a2_u3": "up",
+    "ar001_u1": "up",
+    "ar001_u3": "up",
+    "ar001a1_u2": "up",
+    "ar001a1_u3": "up",
+    "ar001a1_u1": "up",
+    "ar001a2_u2": "up",
+    "ar001a2_u3": "up",
+    "ar001a2_u4": "up",
+    "ar001a3_u1": "up",
+    "ar001a3_u4": "up",
+    "ar002_u1": "up",
+    "ar002_u3": "up",
+    "ar002a1_u3": "up",
+    "ar002a1_u4": "up",
+    "ar002a1_u1": "up",
+    "ar002a2_u3": "up",
+    "ar002a2_u4": "up",
+    "ar003a1_u1": "up",
+    "ar003a1_u2": "up",
+    "ar003a1_u3": "up",
+    "pol001_u1": "up",
+    "pol001_u2": "up",
+    "pol001a1_u2": "up",
+    "pol001a1_u3": "up",
+    "pol001a2_u1": "up",
+    "pol001a2_u3": "up",
+    "pol001a2_u4": "up",
+    "pol001a3_u4": "up",
+    "pol001a3_u1": "up",
+    "pol002a1_u1": "up",
+    "pol002a1_u3": "up",
+    "pol002a1_u4": "up",
+    "pol003a1_u2": "up",
+    "pol003a1_u4": "up",
+    "pol003a2_u1": "up",
+    "pol003a2_u2": "up",
+    "gd001a1_u1": "up",
+    "gd001a1_u3": "up",
+    "gd001a2_u4": "up",
+    "gd001a2_u1": "up",
+    "gd001a3_u1": "up",
+    "gd001a3_u2": "up",
+    "gd002a1_u4": "up",
+    "gd002a1_u2": "up",
+    "gd002a2_u4": "up",
+    "gd002a2_u1": "up"
+  }
+}
