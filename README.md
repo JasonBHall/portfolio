@@ -27,10 +27,9 @@ The entire interactive frontend (live search, inline status changes, note submis
 | | |
 |---|---|
 | ![Active list with filter sidebar, age badges, and inline status dropdowns](./Pursuits-Job-CRM/screenshots/pursuits_active.jpg) | ![Today view with overdue item highlighted and voice-linked badges](./Pursuits-Job-CRM/screenshots/pursuits_today.jpg) |
-| ![Upcoming view mixing fitness and life tasks sorted by due date](./Pursuits-Job-CRM/screenshots/pursuits_upcoming.jpg) | ![All tasks view in due-date order](./Pursuits-Job-CRM/screenshots/pursuits_all.jpg) |
-| ![Done view with completed tasks and notes intact](./Pursuits-Job-CRM/screenshots/pursuits_done.jpg) | ![Detail page with salary range, contacts, snooze, tags and notes timeline](./Pursuits-Job-CRM/screenshots/pursuits_detail.jpg) |
-| ![Dashboard with pipeline funnel, status donut, activity chart and age distribution](./Pursuits-Job-CRM/screenshots/pursuits_dashboard.jpg) | ![New opportunity form with Paste and Extract panel auto-filling fields](./Pursuits-Job-CRM/screenshots/pursuits_new_with_claude.jpg) |
-| ![Archive view with closed opportunities and Restore buttons](./Pursuits-Job-CRM/screenshots/pursuits_archive.jpg) | ![Keyboard shortcuts modal](./Pursuits-Job-CRM/screenshots/pursuits_keyboard.jpg) |
+| ![Detail page with salary range, contacts, snooze, tags and notes timeline](./Pursuits-Job-CRM/screenshots/pursuits_detail.jpg) | ![Dashboard with pipeline funnel, status donut, activity chart and age distribution](./Pursuits-Job-CRM/screenshots/pursuits_dashboard.jpg) |
+| ![New opportunity form with Paste and Extract panel auto-filling fields](./Pursuits-Job-CRM/screenshots/pursuits_new_with_claude.jpg) | ![Archive view with closed opportunities and Restore buttons](./Pursuits-Job-CRM/screenshots/pursuits_archive.jpg) |
+| ![Keyboard shortcuts modal](./Pursuits-Job-CRM/screenshots/pursuits_keyboard.jpg) | |
 
 ---
 
