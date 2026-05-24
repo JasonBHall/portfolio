@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "StarshipSimulation.Server\\StarshipSimulation.Server.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "StarshipSimulation.Renderer\\StarshipSimulation.Renderer.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
