@@ -4,7 +4,7 @@ So you're about to see a bit of what goes on behind the curtain.
 
 These are my passion projects, all built with AI-assisted coding, all solving a real problem I actually had. Some of them could solve business needs. Some of them exist because I wanted a specific thing that didn't exist yet and I knew I could build it. Hard problems are interesting to me. I don't stop when it gets complicated.
 
-I've split them into two honest categories.
+I've split them into two categories: Life Improvers and Nerdy Pursuits.
 
 ---
 
